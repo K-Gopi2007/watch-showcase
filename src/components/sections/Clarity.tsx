@@ -22,7 +22,10 @@ export function Clarity() {
               <img 
                 src={dialImg} 
                 alt="Watch Dial" 
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover shadow-2xl brightness-90 hover:brightness-100 transition-all duration-700"
+                style={{ transform: "translateZ(0)" }}
               />
             </div>
           </motion.div>

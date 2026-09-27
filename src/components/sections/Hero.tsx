@@ -64,13 +64,16 @@ export function Hero() {
           <motion.img 
             src={frontImg} 
             alt="Rolex Submariner" 
+            fetchPriority="high"
+            decoding="sync"
             animate={{ y: [0, -20, 0] }}
             transition={{ 
               duration: 6, 
               repeat: Infinity, 
               ease: "easeInOut" 
             }}
-            className="object-contain h-full w-full drop-shadow-2xl brightness-90 hover:brightness-110 transition-all duration-700"
+            className="object-cover h-full w-full drop-shadow-2xl brightness-90 hover:brightness-110 transition-all duration-700"
+            style={{ transform: "translateZ(0)" }}
           />
         </motion.div>
       </div>

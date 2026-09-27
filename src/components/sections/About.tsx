@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import backImg from '../../assets/watch/back.jpg';
 
 export function About() {
   return (
@@ -14,14 +15,17 @@ export function About() {
           >
             <div className="aspect-[3/4] overflow-hidden">
               <img 
-                src="https://images.unsplash.com/photo-1548171915-e7afefa08744?q=80&w=1000&auto=format&fit=crop" 
-                alt="Watchmaking Craftsmanship" 
+                src={backImg} 
+                alt="Rolex Submariner Movement" 
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-1000"
+                style={{ transform: "translateZ(0)" }}
               />
             </div>
             <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-accent hidden md:flex items-center justify-center p-6 border border-white/5">
               <p className="font-serif text-2xl italic text-primary text-center">
-                Since<br/>1884
+                Since<br/>1953
               </p>
             </div>
           </motion.div>
@@ -34,31 +38,31 @@ export function About() {
             className="order-1 lg:order-2 flex flex-col gap-6"
           >
             <span className="text-primary uppercase tracking-[0.3em] text-xs font-semibold">
-              Our Heritage
+              The Heritage
             </span>
             <h2 className="font-serif text-4xl md:text-5xl leading-tight text-balance">
-              Uncompromising <span className="italic text-primary">Craftsmanship</span>
+              The Diver's <span className="italic text-primary">Benchmark</span>
             </h2>
             <div className="space-y-4 text-muted text-lg leading-relaxed">
               <p>
-                Every CHRONOS timepiece is the result of hundreds of hours of meticulous labor by master artisans. We blend centuries-old Swiss watchmaking traditions with cutting-edge materials and engineering.
+                The Rolex Submariner is the undisputed reference among divers' watches. Its robust Oyster case, guaranteed waterproof to a depth of 300 metres, provides the high-precision movement with optimal protection from water, dust, and pressure.
               </p>
               <p>
-                From the hand-polished bevels of the movement to the perfect sweep of the seconds hand, no detail is too small. Our dedication to perfection is not just a philosophy—it is the very essence of our brand.
+                Equipped with a unidirectional rotatable bezel with Cerachrom insert and a solid-link Oyster bracelet, it is engineered for absolute reliability. Our dedication to perfection is the very essence of the crown.
               </p>
             </div>
             <div className="mt-8 pt-8 border-t border-white/10">
               <div className="flex items-center gap-12">
                 <div>
-                  <h4 className="text-3xl font-serif text-foreground">300+</h4>
-                  <p className="text-xs uppercase tracking-widest text-muted mt-2">Components</p>
+                  <h4 className="text-3xl font-serif text-foreground">300m</h4>
+                  <p className="text-xs uppercase tracking-widest text-muted mt-2">Waterproof</p>
                 </div>
                 <div>
-                  <h4 className="text-3xl font-serif text-foreground">45</h4>
-                  <p className="text-xs uppercase tracking-widest text-muted mt-2">Days of Testing</p>
+                  <h4 className="text-3xl font-serif text-foreground">70h</h4>
+                  <p className="text-xs uppercase tracking-widest text-muted mt-2">Power Reserve</p>
                 </div>
                 <div>
-                  <h4 className="text-3xl font-serif text-foreground">10</h4>
+                  <h4 className="text-3xl font-serif text-foreground">5</h4>
                   <p className="text-xs uppercase tracking-widest text-muted mt-2">Years Warranty</p>
                 </div>
               </div>

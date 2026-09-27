@@ -73,7 +73,10 @@ export function Gallery() {
               <img 
                 src={item.src} 
                 alt={item.alt} 
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000 ease-out"
+                style={{ transform: "translateZ(0)" }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-6">
                 <span className="text-primary uppercase tracking-widest text-xs font-semibold mb-2">

@@ -43,7 +43,10 @@ export function Story() {
               <img 
                 src={sideImg} 
                 alt="Watch Profile" 
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover shadow-2xl brightness-90 hover:brightness-100 transition-all duration-700"
+                style={{ transform: "translateZ(0)" }}
               />
             </div>
           </motion.div>
