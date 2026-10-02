@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import dialImg from '../../assets/watch/dial.jpg';
+import dialImg from '../../assets/watch/dial.webp';
 
 export function Clarity() {
   return (

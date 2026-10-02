@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import frontImg from '../../assets/watch/front.jpg';
+import frontImg from '../../assets/watch/front.webp';
 
 export function Hero() {
   return (

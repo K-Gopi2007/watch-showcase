@@ -1,11 +1,11 @@
 import { motion } from 'framer-motion';
 
 // Import local images
-import frontImg from '../../assets/watch/front.jpg';
-import dialImg from '../../assets/watch/dial.jpg';
-import sideImg from '../../assets/watch/side.jpg';
-import backImg from '../../assets/watch/back.jpg';
-import braceletImg from '../../assets/watch/bracelet.jpg';
+import frontImg from '../../assets/watch/front.webp';
+import dialImg from '../../assets/watch/dial.webp';
+import sideImg from '../../assets/watch/side.webp';
+import backImg from '../../assets/watch/back.webp';
+import braceletImg from '../../assets/watch/bracelet.webp';
 
 const galleryItems = [
   {

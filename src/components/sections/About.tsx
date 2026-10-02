@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import backImg from '../../assets/watch/back.jpg';
+import backImg from '../../assets/watch/back.webp';
 
 export function About() {
   return (

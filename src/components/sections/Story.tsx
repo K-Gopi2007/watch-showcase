@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import sideImg from '../../assets/watch/side.jpg';
+import sideImg from '../../assets/watch/side.webp';
 
 export function Story() {
   return (
