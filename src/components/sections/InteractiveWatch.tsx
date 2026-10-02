@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, OrbitControls, Environment, ContactShadows } from '@react-three/drei';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { useGLTF, OrbitControls, Environment, ContactShadows, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -8,15 +8,59 @@ import { useGSAP } from '@gsap/react';
 
 gsap.registerPlugin(ScrollTrigger);
 
+const HOTSPOTS = [
+  { id: 'bezel', title: 'Cerachrom Bezel', description: 'Virtually scratchproof ceramic bezel with platinum-coated numerals.', position: new THREE.Vector3(0, 1.3, 0.5), offset: new THREE.Vector3(0, 2, 3) },
+  { id: 'crown', title: 'Triplock Crown', description: 'Triple waterproofness system ensuring the case remains completely watertight.', position: new THREE.Vector3(1.3, 0, 0), offset: new THREE.Vector3(3, 0, 2) },
+  { id: 'dial', title: 'Maxi Dial', description: 'Large luminescent hour markers for exceptional legibility in deep water.', position: new THREE.Vector3(0, 0, 0.6), offset: new THREE.Vector3(0, 0, 3) },
+  { id: 'bracelet', title: 'Oyster Bracelet', description: 'Robust and comfortable metal bracelet with Oysterlock safety clasp.', position: new THREE.Vector3(0, -1.8, 0), offset: new THREE.Vector3(0, -2, 4) },
+];
+
+function Hotspot({ 
+  data, 
+  isActive, 
+  onClick 
+}: { 
+  data: typeof HOTSPOTS[0]; 
+  isActive: boolean; 
+  onClick: (ref: React.RefObject<THREE.Group | null>) => void;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  
+  return (
+    <group ref={groupRef} position={data.position}>
+      <Html center zIndexRange={[100, 0]}>
+        <div className="relative group cursor-pointer" onClick={(e) => { e.stopPropagation(); onClick(groupRef); }}>
+          {/* Marker Dot */}
+          <div className={`w-4 h-4 rounded-full border-2 transition-all duration-300 flex items-center justify-center
+            ${isActive ? 'bg-primary border-primary scale-125' : 'bg-black/50 border-white/80 hover:scale-110 hover:border-primary'}`}>
+            <div className={`w-1 h-1 bg-white rounded-full transition-opacity ${isActive ? 'opacity-0' : 'opacity-100'}`} />
+          </div>
+          
+          {/* Info Card */}
+          <div className={`absolute top-6 left-1/2 -translate-x-1/2 w-48 bg-black/80 backdrop-blur-md border border-white/10 p-4 rounded-lg transition-all duration-500
+            ${isActive ? 'opacity-100 translate-y-0 visible' : 'opacity-0 translate-y-4 invisible'}`}>
+            <h3 className="text-primary text-sm font-bold uppercase tracking-wider mb-2">{data.title}</h3>
+            <p className="text-white/80 text-xs leading-relaxed">{data.description}</p>
+          </div>
+        </div>
+      </Html>
+    </group>
+  );
+}
+
 function WatchModel({ 
   gsapRef, 
-  onLoaded 
+  onLoaded,
+  controlsRef
 }: { 
   gsapRef: React.RefObject<THREE.Group | null>;
   onLoaded: () => void;
+  controlsRef: React.RefObject<any>;
 }) {
   const { scene } = useGLTF('/models/watch.glb/model.glb');
   const autoRotateRef = useRef<THREE.Group>(null);
+  const { camera } = useThree();
+  const [activeHotspot, setActiveHotspot] = useState<string | null>(null);
 
   useEffect(() => {
     if (scene) {
@@ -25,15 +69,65 @@ function WatchModel({
   }, [scene, onLoaded]);
 
   useFrame((_state, delta) => {
-    if (autoRotateRef.current) {
-      autoRotateRef.current.rotation.y += delta * 0.2; // Slow automatic rotation
+    // Only auto-rotate if no hotspot is actively being viewed
+    if (autoRotateRef.current && !activeHotspot) {
+      autoRotateRef.current.rotation.y += delta * 0.2;
     }
   });
+
+  const handleHotspotClick = (id: string, groupRef: React.RefObject<THREE.Group | null>, data: typeof HOTSPOTS[0]) => {
+    if (activeHotspot === id) {
+      // Click again to deselect
+      setActiveHotspot(null);
+      return;
+    }
+    
+    setActiveHotspot(id);
+    
+    if (groupRef.current && controlsRef.current) {
+      // Get exact world position of the clicked hotspot, considering all nested rotations
+      const targetPosition = new THREE.Vector3();
+      groupRef.current.getWorldPosition(targetPosition);
+      
+      // Calculate camera position offset relative to the target in world space
+      // We use the data.offset for the camera's local position, but apply it to world
+      const cameraPosition = new THREE.Vector3();
+      cameraPosition.copy(targetPosition).add(data.offset);
+
+      // Smoothly animate OrbitControls target
+      gsap.to(controlsRef.current.target, {
+        x: targetPosition.x,
+        y: targetPosition.y,
+        z: targetPosition.z,
+        duration: 1.5,
+        ease: 'power3.inOut'
+      });
+
+      // Smoothly animate Camera position
+      gsap.to(camera.position, {
+        x: cameraPosition.x,
+        y: cameraPosition.y,
+        z: cameraPosition.z,
+        duration: 1.5,
+        ease: 'power3.inOut'
+      });
+    }
+  };
 
   return (
     <group ref={gsapRef}>
       <group ref={autoRotateRef}>
         <primitive object={scene} />
+        
+        {/* Render Hotspots */}
+        {HOTSPOTS.map((hotspot) => (
+          <Hotspot 
+            key={hotspot.id} 
+            data={hotspot} 
+            isActive={activeHotspot === hotspot.id} 
+            onClick={(ref) => handleHotspotClick(hotspot.id, ref, hotspot)} 
+          />
+        ))}
       </group>
     </group>
   );
@@ -45,6 +139,7 @@ useGLTF.preload('/models/watch.glb/model.glb');
 export function InteractiveWatch() {
   const containerRef = useRef<HTMLElement>(null);
   const gsapRef = useRef<THREE.Group>(null);
+  const controlsRef = useRef<any>(null);
   const [modelReady, setModelReady] = useState(false);
   const handleLoaded = useCallback(() => setModelReady(true), []);
 
@@ -140,6 +235,7 @@ export function InteractiveWatch() {
             <WatchModel 
               gsapRef={gsapRef} 
               onLoaded={handleLoaded} 
+              controlsRef={controlsRef}
             />
             
             <ContactShadows 
@@ -153,6 +249,7 @@ export function InteractiveWatch() {
             />
             
             <OrbitControls 
+              ref={controlsRef}
               enablePan={false} 
               enableZoom={true} 
               minDistance={2} 
