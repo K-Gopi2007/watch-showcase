@@ -4,7 +4,7 @@ import { useGLTF, OrbitControls, Environment, ContactShadows } from '@react-thre
 import * as THREE from 'three';
 
 function WatchModel() {
-  const { scene } = useGLTF('/models/watch.glb');
+  const { scene } = useGLTF('/models/watch.glb/model.glb');
   const watchRef = useRef<THREE.Group>(null);
 
   useFrame((_state, delta) => {
@@ -21,7 +21,7 @@ function WatchModel() {
 }
 
 // Preload the model
-useGLTF.preload('/models/watch.glb');
+useGLTF.preload('/models/watch.glb/model.glb');
 
 export function InteractiveWatch() {
   return (
