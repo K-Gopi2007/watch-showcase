@@ -16,10 +16,16 @@ const InteractiveWatch = lazy(() => import('./components/sections/InteractiveWat
 function App() {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans">
+      <a 
+        href="#main-content" 
+        className="absolute -top-96 left-0 z-[999] bg-primary text-black px-4 py-2 focus:top-0 transition-all focus:outline-none"
+      >
+        Skip to main content
+      </a>
       <LoadingScreen />
       <Navbar />
       
-      <main>
+      <main id="main-content">
         <Hero />
         <Suspense fallback={null}>
           <InteractiveWatch />
