@@ -1,13 +1,17 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { Navbar } from './components/layout/Navbar';
+import { IntroSequence } from './components/layout/IntroSequence';
 import { Footer } from './components/layout/Footer';
 import { Hero } from './components/sections/Hero';
 import { Statistics } from './components/sections/Statistics';
 import { About } from './components/sections/About';
 import { Story } from './components/sections/Story';
+import { Heritage } from './components/sections/Heritage';
 import { Clarity } from './components/sections/Clarity';
 import { Specifications } from './components/sections/Specifications';
 import { Gallery } from './components/sections/Gallery';
+import { Testimonials } from './components/sections/Testimonials';
 import { Contact } from './components/sections/Contact';
 
 const InteractiveWatch = lazy(() => import('./components/sections/InteractiveWatch').then(m => ({ default: m.InteractiveWatch })));
@@ -23,8 +27,15 @@ const InteractiveWatchFallback = () => (
 );
 
 function App() {
+  const [introDone, setIntroDone] = useState(false);
+
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans">
+    <>
+      <AnimatePresence>
+        {!introDone && <IntroSequence onComplete={() => setIntroDone(true)} />}
+      </AnimatePresence>
+
+      <div className="min-h-screen bg-background text-foreground font-sans">
       <a 
         href="#main-content" 
         className="absolute -top-96 left-0 z-[999] bg-primary text-black px-4 py-2 focus:top-0 transition-all focus:outline-none"
@@ -41,14 +52,17 @@ function App() {
         <Statistics />
         <About />
         <Story />
+        <Heritage />
         <Clarity />
         <Specifications />
         <Gallery />
+        <Testimonials />
         <Contact />
       </main>
 
       <Footer />
     </div>
+    </>
   );
 }
 
