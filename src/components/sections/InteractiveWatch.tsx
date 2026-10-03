@@ -138,12 +138,12 @@ function WatchModel({
   const explodedClones = React.useMemo(() => {
     if (!scene) return [];
     const styles = [
-      { label: "Crystal", zOffset: 1.2, opacity: 0.15, wireframe: false, color: "#ffffff" },
-      { label: "Bezel", zOffset: 0.8, opacity: 0.5, wireframe: false, color: "#111111" },
-      { label: "Dial", zOffset: 0.4, opacity: 0.8, wireframe: false, color: "#0033aa" },
+      { label: "Crystal", zOffset: 0.3, opacity: 0.15, wireframe: false, color: "#ffffff" },
+      { label: "Bezel", zOffset: 0.2, opacity: 0.5, wireframe: false, color: "#111111" },
+      { label: "Dial", zOffset: 0.1, opacity: 0.8, wireframe: false, color: "#0033aa" },
       { label: "Movement", zOffset: 0, opacity: 0.9, wireframe: true, color: "#d4af37" },
-      { label: "Case", zOffset: -0.4, opacity: 0.7, wireframe: false, color: "#ffffff" },
-      { label: "Bracelet", zOffset: -1.0, opacity: 0.9, wireframe: false, color: "#aaaaaa" },
+      { label: "Case", zOffset: -0.1, opacity: 0.7, wireframe: false, color: "#ffffff" },
+      { label: "Bracelet", zOffset: -0.2, opacity: 0.9, wireframe: false, color: "#aaaaaa" },
     ];
     return styles.map((style) => {
       const c = scene.clone();
@@ -225,7 +225,12 @@ function WatchModel({
             target: controlsRef.current.target.clone()
           });
         }
-        gsap.to(camera.position, { x: 12, y: 6, z: 8, duration: 1.5, ease: "power3.inOut" });
+        gsap.to(camera.position, { 
+          x: 12, y: 6, z: 8, 
+          duration: 1.5, 
+          ease: "power3.inOut",
+          onUpdate: () => controlsRef.current?.update()
+        });
         gsap.to(controlsRef.current.target, { x: 0, y: 0, z: 0, duration: 1.5, ease: "power3.inOut" });
       }
 
@@ -725,8 +730,8 @@ export function InteractiveWatch() {
 
       <div className="relative z-10 w-full h-full cursor-grab active:cursor-grabbing">
         <Canvas shadows camera={{ position: [0, 0, 10], fov: 45 }} className="touch-pan-y">
-          <Environment files="/city_small.hdr" environmentIntensity={activeHotspot || isExploded ? 0.05 : 1.5} />
-          <ambientLight intensity={activeHotspot || isExploded ? 0.05 : 0.4} />
+          <Environment files="/city_small.hdr" environmentIntensity={1.5} />
+          <ambientLight intensity={1.5} />
           
           <spotLight 
             position={[5, 8, 5]} 
