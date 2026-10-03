@@ -3,7 +3,6 @@ import { AnimatePresence } from 'framer-motion';
 import { Navbar } from './components/layout/Navbar';
 import { IntroSequence } from './components/layout/IntroSequence';
 import { Footer } from './components/layout/Footer';
-import { Hero } from './components/sections/Hero';
 import { Statistics } from './components/sections/Statistics';
 import { About } from './components/sections/About';
 import { Story } from './components/sections/Story';
@@ -15,6 +14,10 @@ import { ProjectHighlights } from './components/sections/ProjectHighlights';
 import { Testimonials } from './components/sections/Testimonials';
 import { Contact } from './components/sections/Contact';
 import { CursorGlow } from './components/effects/CursorGlow';
+
+import { LuxuryReveal } from './components/sections/LuxuryReveal';
+
+import { LuxuryVideoHero } from './components/sections/LuxuryVideoHero';
 
 const InteractiveWatch = lazy(() => import('./components/sections/InteractiveWatch').then(m => ({ default: m.InteractiveWatch })));
 
@@ -48,7 +51,8 @@ function App() {
       <Navbar />
       
       <main id="main-content">
-        <Hero />
+        <LuxuryReveal />
+        <LuxuryVideoHero />
         <Suspense fallback={<InteractiveWatchFallback />}>
           <InteractiveWatch />
         </Suspense>
