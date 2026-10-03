@@ -138,12 +138,12 @@ function WatchModel({
   const explodedClones = React.useMemo(() => {
     if (!scene) return [];
     const styles = [
-      { label: "Crystal", zOffset: 6, opacity: 0.15, wireframe: false, color: "#ffffff" },
-      { label: "Bezel", zOffset: 3.5, opacity: 0.5, wireframe: false, color: "#111111" },
-      { label: "Dial", zOffset: 1, opacity: 0.8, wireframe: false, color: "#0033aa" },
-      { label: "Movement", zOffset: -1.5, opacity: 0.9, wireframe: true, color: "#d4af37" },
-      { label: "Case", zOffset: -4, opacity: 0.7, wireframe: false, color: "#ffffff" },
-      { label: "Bracelet", zOffset: -6.5, opacity: 0.9, wireframe: false, color: "#aaaaaa" },
+      { label: "Crystal", zOffset: 1.2, opacity: 0.15, wireframe: false, color: "#ffffff" },
+      { label: "Bezel", zOffset: 0.8, opacity: 0.5, wireframe: false, color: "#111111" },
+      { label: "Dial", zOffset: 0.4, opacity: 0.8, wireframe: false, color: "#0033aa" },
+      { label: "Movement", zOffset: 0, opacity: 0.9, wireframe: true, color: "#d4af37" },
+      { label: "Case", zOffset: -0.4, opacity: 0.7, wireframe: false, color: "#ffffff" },
+      { label: "Bracelet", zOffset: -1.0, opacity: 0.9, wireframe: false, color: "#aaaaaa" },
     ];
     return styles.map((style) => {
       const c = scene.clone();
@@ -208,14 +208,14 @@ function WatchModel({
     if (isExploded) {
       gsap.to(clonedMaterials.Material_01, { 
         opacity: 0, 
-        duration: 1, 
-        ease: "power2.inOut",
+        duration: 1.5, 
+        ease: "power3.inOut",
         onUpdate: () => { clonedMaterials.Material_01.needsUpdate = true; } 
       });
       clonedMaterials.Material_01.transparent = true;
 
       if (hotspotsGroupRef.current) {
-        gsap.to(hotspotsGroupRef.current.position, { y: 10, duration: 0.5 });
+        gsap.to(hotspotsGroupRef.current.position, { y: 10, duration: 1.5 });
       }
 
       if (controlsRef.current) {
@@ -225,17 +225,17 @@ function WatchModel({
             target: controlsRef.current.target.clone()
           });
         }
-        gsap.to(camera.position, { x: 12, y: 6, z: 8, duration: 2, ease: "power3.inOut" });
-        gsap.to(controlsRef.current.target, { x: 0, y: 0, z: 0, duration: 2, ease: "power3.inOut" });
+        gsap.to(camera.position, { x: 12, y: 6, z: 8, duration: 1.5, ease: "power3.inOut" });
+        gsap.to(controlsRef.current.target, { x: 0, y: 0, z: 0, duration: 1.5, ease: "power3.inOut" });
       }
 
       explodedRefs.current.forEach((ref, idx) => {
         if (ref) {
           ref.visible = true;
           const cloneData = explodedClones[idx];
-          gsap.to(ref.position, { z: cloneData.zOffset, duration: 2, ease: "power3.inOut" });
+          gsap.to(ref.position, { z: cloneData.zOffset, duration: 1.5, ease: "power3.inOut" });
           cloneData.materials.forEach((mat) => {
-            gsap.to(mat, { opacity: cloneData.opacity, duration: 2, ease: "power3.inOut" });
+            gsap.to(mat, { opacity: cloneData.opacity, duration: 1.5, ease: "power3.inOut" });
           });
         }
       });
@@ -245,17 +245,11 @@ function WatchModel({
         opacity: 1, 
         duration: 1.5, 
         ease: "power3.inOut", 
-        delay: 0.5,
         onUpdate: () => { clonedMaterials.Material_01.needsUpdate = true; }
       });
       
       if (hotspotsGroupRef.current) {
-        gsap.to(hotspotsGroupRef.current.position, { y: 0, duration: 1, delay: 0.5 });
-      }
-
-      if (originalCamera && controlsRef.current && !activeHotspot) {
-        gsap.to(camera.position, { x: originalCamera.position.x, y: originalCamera.position.y, z: originalCamera.position.z, duration: 2, ease: "power3.inOut" });
-        gsap.to(controlsRef.current.target, { x: originalCamera.target.x, y: originalCamera.target.y, z: originalCamera.target.z, duration: 2, ease: "power3.inOut" });
+        gsap.to(hotspotsGroupRef.current.position, { y: 0, duration: 1.5 });
       }
 
       explodedRefs.current.forEach((ref, idx) => {
@@ -355,7 +349,6 @@ function WatchModel({
           <group 
             key={idx} 
             ref={(el) => { if(el) explodedRefs.current[idx] = el; }}
-            visible={false}
           >
             <primitive object={clone.mesh} />
             <Html position={[0, 2.5, 0]} center zIndexRange={[100, 0]}>
@@ -665,7 +658,7 @@ export function InteractiveWatch() {
 <div className={clsx("absolute bottom-12 left-1/2 -translate-x-1/2 z-50 flex gap-4 transition-all duration-500", activeHotspot ? "opacity-0 pointer-events-none translate-y-10" : "opacity-100 translate-y-0")}>
         {isExploded ? (
           <button 
-            onClick={() => { luxurySounds.playTap(); setIsExploded(false); }}
+            onClick={() => { luxurySounds.playTap(); setIsExploded(false); setShowConfig(true); }}
             onMouseEnter={luxurySounds.playHover}
             className="px-8 py-3 bg-white text-black font-semibold text-xs uppercase tracking-widest hover:bg-white/90 transition-all shadow-[0_0_20px_rgba(255,255,255,0.4)] rounded-full"
           >
