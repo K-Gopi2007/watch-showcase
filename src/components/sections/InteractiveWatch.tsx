@@ -22,12 +22,12 @@ const HOTSPOTS = [
 const CONFIG_OPTIONS = {
   dial: [
     { id: 'black', label: 'Black', color: '#111111' },
-    { id: 'blue', label: 'Blue', color: '#0033aa' },
-    { id: 'green', label: 'Green', color: '#005522' }
+    { id: 'blue', label: 'Blue', color: '#1b365d' },
+    { id: 'green', label: 'Green', color: '#0f5132' }
   ],
   case: [
-    { id: 'steel', label: 'Steel', color: '#ffffff', metalness: 1, roughness: 0.2 },
-    { id: 'gold', label: 'Gold', color: '#d4af37', metalness: 1, roughness: 0.1 }
+    { id: 'steel', label: 'Steel', color: '#d7d7d7', metalness: 0.9, roughness: 0.35 },
+    { id: 'gold', label: 'Gold', color: '#d4af37', metalness: 1, roughness: 0.15 }
   ],
   bracelet: [
     { id: 'oyster', label: 'Oyster' },
@@ -73,15 +73,18 @@ function Hotspot({
 
 function CameraLight({ active, hotspotPosition }: { active: boolean, hotspotPosition?: THREE.Vector3 }) {
   const lightRef = useRef<THREE.PointLight>(null);
+  const target = useRef(new THREE.Vector3());
+  
   useFrame(({ camera }) => {
     if (lightRef.current && active) {
       if (hotspotPosition) {
-        const target = new THREE.Vector3().copy(camera.position).lerp(hotspotPosition, 0.3);
-        lightRef.current.position.lerp(target, 0.05);
+        target.current.copy(camera.position).lerp(hotspotPosition, 0.3);
+        lightRef.current.position.lerp(target.current, 0.05);
       } else {
-        lightRef.current.position.copy(camera.position);
-        lightRef.current.position.x += 1;
-        lightRef.current.position.y += 1;
+        target.current.copy(camera.position);
+        target.current.x += 1;
+        target.current.y += 1;
+        lightRef.current.position.lerp(target.current, 0.05);
       }
     }
   });
@@ -109,7 +112,21 @@ function WatchModel({
   isExploded: boolean;
   gyroData?: React.MutableRefObject<{x: number, y: number}>;
 }) {
-  const { scene, materials } = useGLTF('/models/watch.glb/model.glb') as any;
+  const { scene } = useGLTF('/models/watch.glb/model.glb') as any;
+
+  const { clonedScene, clonedMaterials } = React.useMemo(() => {
+    if (!scene) return { clonedScene: null, clonedMaterials: null };
+    const s = scene.clone();
+    const mats: any = {};
+    s.traverse((node: any) => {
+      if (node.isMesh && node.material) {
+        node.material = node.material.clone();
+        mats[node.material.name] = node.material;
+      }
+    });
+    return { clonedScene: s, clonedMaterials: mats };
+  }, [scene]);
+
   const autoRotateRef = useRef<THREE.Group>(null);
   const { camera } = useThree();
   const [originalCamera, setOriginalCamera] = useState<{position: THREE.Vector3, target: THREE.Vector3} | null>(null);
@@ -152,8 +169,8 @@ function WatchModel({
   }, [scene, onLoaded]);
 
   useEffect(() => {
-    if (!materials || !materials.Material_01) return;
-    const material = materials.Material_01;
+    if (!clonedMaterials || !clonedMaterials.Material_01) return;
+    const material = clonedMaterials.Material_01;
 
     const caseOpt = CONFIG_OPTIONS.case.find(c => c.id === config.case);
     const dialOpt = CONFIG_OPTIONS.dial.find(d => d.id === config.dial);
@@ -172,23 +189,30 @@ function WatchModel({
         g: targetColor.g,
         b: targetColor.b,
         duration: 1,
-        ease: 'power2.out'
+        ease: 'power2.out',
+        onUpdate: () => { material.needsUpdate = true; }
       });
       gsap.to(material, {
         metalness: caseOpt.metalness,
         roughness: caseOpt.roughness,
         duration: 1,
-        ease: 'power2.out'
+        ease: 'power2.out',
+        onUpdate: () => { material.needsUpdate = true; }
       });
     }
-  }, [config, materials]);
+  }, [config, clonedMaterials]);
 
   useEffect(() => {
-    if (!materials || !materials.Material_01) return;
+    if (!clonedMaterials || !clonedMaterials.Material_01) return;
     
     if (isExploded) {
-      gsap.to(materials.Material_01, { opacity: 0, duration: 1, ease: "power2.inOut" });
-      materials.Material_01.transparent = true;
+      gsap.to(clonedMaterials.Material_01, { 
+        opacity: 0, 
+        duration: 1, 
+        ease: "power2.inOut",
+        onUpdate: () => { clonedMaterials.Material_01.needsUpdate = true; } 
+      });
+      clonedMaterials.Material_01.transparent = true;
 
       if (hotspotsGroupRef.current) {
         gsap.to(hotspotsGroupRef.current.position, { y: 10, duration: 0.5 });
@@ -217,7 +241,13 @@ function WatchModel({
       });
 
     } else {
-      gsap.to(materials.Material_01, { opacity: 1, duration: 1.5, ease: "power3.inOut", delay: 0.5 });
+      gsap.to(clonedMaterials.Material_01, { 
+        opacity: 1, 
+        duration: 1.5, 
+        ease: "power3.inOut", 
+        delay: 0.5,
+        onUpdate: () => { clonedMaterials.Material_01.needsUpdate = true; }
+      });
       
       if (hotspotsGroupRef.current) {
         gsap.to(hotspotsGroupRef.current.position, { y: 0, duration: 1, delay: 0.5 });
@@ -238,20 +268,21 @@ function WatchModel({
         }
       });
     }
-  }, [isExploded, materials, camera, controlsRef, explodedClones, activeHotspot, originalCamera]);
+  }, [isExploded, clonedMaterials, camera, controlsRef, explodedClones, activeHotspot, originalCamera]);
 
   useFrame((_state, delta) => {
     if (autoRotateRef.current && !activeHotspot && !isExploded) {
-      autoRotateRef.current.rotation.y += delta * 0.2;
+      // Removing this continuous rotation to prevent fighting with GSAP scroll and OrbitControls.
+      // autoRotateRef.current.rotation.y += delta * 0.2;
     }
     
     if (mainGroupRef.current) {
       if (gyroData?.current && !activeHotspot && !isExploded) {
-        mainGroupRef.current.rotation.x = THREE.MathUtils.lerp(mainGroupRef.current.rotation.x, gyroData.current.x, 0.05);
-        mainGroupRef.current.rotation.y = THREE.MathUtils.lerp(mainGroupRef.current.rotation.y, gyroData.current.y, 0.05);
+        mainGroupRef.current.rotation.x = THREE.MathUtils.damp(mainGroupRef.current.rotation.x, gyroData.current.x, 4, delta);
+        mainGroupRef.current.rotation.y = THREE.MathUtils.damp(mainGroupRef.current.rotation.y, gyroData.current.y, 4, delta);
       } else {
-        mainGroupRef.current.rotation.x = THREE.MathUtils.lerp(mainGroupRef.current.rotation.x, 0, 0.05);
-        mainGroupRef.current.rotation.y = THREE.MathUtils.lerp(mainGroupRef.current.rotation.y, 0, 0.05);
+        mainGroupRef.current.rotation.x = THREE.MathUtils.damp(mainGroupRef.current.rotation.x, 0, 4, delta);
+        mainGroupRef.current.rotation.y = THREE.MathUtils.damp(mainGroupRef.current.rotation.y, 0, 4, delta);
       }
     }
   });
@@ -317,7 +348,7 @@ function WatchModel({
     <group ref={gsapRef}>
       <group ref={autoRotateRef}>
         <group ref={mainGroupRef}>
-          <primitive object={scene} />
+          {clonedScene && <primitive object={clonedScene} />}
         </group>
         
         {explodedClones.map((clone, idx) => (
@@ -443,7 +474,7 @@ export function InteractiveWatch() {
         trigger: containerRef.current,
         start: 'top top',
         end: '+=1200',
-        scrub: 1,
+        scrub: 2,
       }
     });
 
@@ -456,27 +487,27 @@ export function InteractiveWatch() {
       y: 0,
       z: 0,
       duration: 2,
-      ease: "power3.out"
+      ease: "none"
     }, 0);
 
     tl.to(gsapRef.current.rotation, {
       x: 0,
       y: 0,
       duration: 2,
-      ease: "power3.out"
+      ease: "none"
     }, 0);
 
     tl.to(".text-1", {
       opacity: 1,
       y: 0,
       duration: 1.5,
-      ease: "power2.out"
+      ease: "none"
     }, 0.5);
 
     tl.to(".line-1", {
       width: "6rem",
       duration: 1,
-      ease: "power2.out"
+      ease: "none"
     }, 1);
 
     gsap.to(gsapRef.current.position, {
