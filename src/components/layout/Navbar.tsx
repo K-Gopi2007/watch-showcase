@@ -1,10 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Volume2, VolumeX } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { luxurySounds } from '../audio/LuxurySounds';
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMuted, setIsMuted] = useState(luxurySounds.isMuted);
+
+  useEffect(() => {
+    const unsubscribe = luxurySounds.subscribe(setIsMuted);
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -34,25 +41,48 @@ export function Navbar() {
         </a>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex gap-8">
-          {navLinks.map((link) => (
-            <a
-              key={link.name}
-              href={link.href}
-              className="text-sm uppercase tracking-widest text-muted hover:text-primary transition-colors"
-            >
-              {link.name}
-            </a>
-          ))}
-        </nav>
+        <div className="hidden md:flex items-center gap-8">
+          <nav className="flex gap-8">
+            {navLinks.map((link) => (
+              <a
+                key={link.name}
+                href={link.href}
+                className="text-sm uppercase tracking-widest text-muted hover:text-primary transition-colors"
+                onMouseEnter={luxurySounds.playHover}
+                onClick={luxurySounds.playTap}
+              >
+                {link.name}
+              </a>
+            ))}
+          </nav>
+          <button
+            onClick={() => luxurySounds.toggleMute()}
+            className="text-muted hover:text-primary transition-colors p-2"
+            aria-label="Toggle sound"
+            onMouseEnter={luxurySounds.playHover}
+          >
+            {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+          </button>
+        </div>
 
-        {/* Mobile Menu Toggle */}
-        <button
-          className="md:hidden text-foreground hover:text-primary transition-colors"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        {/* Mobile Menu & Sound Toggle */}
+        <div className="flex md:hidden items-center gap-4">
+          <button
+            onClick={() => luxurySounds.toggleMute()}
+            className="text-foreground hover:text-primary transition-colors p-2"
+          >
+            {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+          </button>
+          <button
+            className="text-foreground hover:text-primary transition-colors p-2"
+            onClick={() => {
+              luxurySounds.playTap();
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+            }}
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Nav */}

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import frontImg from '../../assets/watch/front.webp';
+import { luxurySounds } from '../audio/LuxurySounds';
 
 export function Hero() {
   return (
@@ -42,12 +43,16 @@ export function Hero() {
             <a 
               href="#collection" 
               className="px-8 py-4 bg-primary text-black font-semibold text-sm uppercase tracking-widest hover:bg-white transition-colors text-center"
+              onMouseEnter={luxurySounds.playHover}
+              onClick={luxurySounds.playTap}
             >
               Explore Collection
             </a>
             <a 
               href="#specifications" 
               className="px-8 py-4 border border-white/20 text-foreground font-semibold text-sm uppercase tracking-widest hover:border-primary hover:text-primary transition-colors text-center"
+              onMouseEnter={luxurySounds.playHover}
+              onClick={luxurySounds.playTap}
             >
               View Specifications
             </a>

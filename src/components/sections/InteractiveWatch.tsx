@@ -3,9 +3,14 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useGLTF, OrbitControls, Environment, ContactShadows, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useGSAP } from '@gsap/react';
-import { X, Settings2, Check } from 'lucide-react';
+
+gsap.registerPlugin(ScrollTrigger);
+import { X, Settings2, Check, Smartphone } from 'lucide-react';
 import clsx from 'clsx';
+import { luxurySounds } from '../audio/LuxurySounds';
 
 const HOTSPOTS = [
   { id: 'bezel', title: 'Cerachrom Bezel', description: 'Virtually scratchproof ceramic bezel with platinum-coated numerals.', position: new THREE.Vector3(0, 1.3, 0.5), offset: new THREE.Vector3(0, 2, 3), specs: ['High-tech Ceramic', 'Platinum PVD', 'UV Resistant'] },
@@ -51,7 +56,8 @@ function Hotspot({
             "relative group cursor-pointer transition-opacity duration-500",
             isAnyActive && !isActive ? "opacity-0 pointer-events-none" : "opacity-100"
           )} 
-          onClick={(e) => { e.stopPropagation(); onClick(groupRef); }}
+          onClick={(e) => { e.stopPropagation(); luxurySounds.playTick(); onClick(groupRef); }}
+          onMouseEnter={luxurySounds.playHover}
         >
           <div className={clsx(
             "w-5 h-5 rounded-full border-2 transition-all duration-300 flex items-center justify-center",
@@ -91,7 +97,8 @@ function WatchModel({
   activeHotspot,
   onHotspotClick,
   config,
-  isExploded
+  isExploded,
+  gyroData
 }: { 
   gsapRef: React.RefObject<THREE.Group | null>;
   onLoaded: () => void;
@@ -100,6 +107,7 @@ function WatchModel({
   onHotspotClick: (id: string, groupRef: React.RefObject<THREE.Group | null>, data: typeof HOTSPOTS[0]) => void;
   config: { dial: string, case: string, bracelet: string };
   isExploded: boolean;
+  gyroData?: React.MutableRefObject<{x: number, y: number}>;
 }) {
   const { scene, materials } = useGLTF('/models/watch.glb/model.glb') as any;
   const autoRotateRef = useRef<THREE.Group>(null);
@@ -236,6 +244,16 @@ function WatchModel({
     if (autoRotateRef.current && !activeHotspot && !isExploded) {
       autoRotateRef.current.rotation.y += delta * 0.2;
     }
+    
+    if (mainGroupRef.current) {
+      if (gyroData?.current && !activeHotspot && !isExploded) {
+        mainGroupRef.current.rotation.x = THREE.MathUtils.lerp(mainGroupRef.current.rotation.x, gyroData.current.x, 0.05);
+        mainGroupRef.current.rotation.y = THREE.MathUtils.lerp(mainGroupRef.current.rotation.y, gyroData.current.y, 0.05);
+      } else {
+        mainGroupRef.current.rotation.x = THREE.MathUtils.lerp(mainGroupRef.current.rotation.x, 0, 0.05);
+        mainGroupRef.current.rotation.y = THREE.MathUtils.lerp(mainGroupRef.current.rotation.y, 0, 0.05);
+      }
+    }
   });
 
   useEffect(() => {
@@ -341,6 +359,46 @@ function WatchModel({
 useGLTF.preload('/models/watch.glb/model.glb');
 
 export function InteractiveWatch() {
+  const [showGyroButton, setShowGyroButton] = useState(false);
+  const gyroData = useRef({ x: 0, y: 0 });
+
+  const handleOrientation = useCallback((event: DeviceOrientationEvent) => {
+    const beta = event.beta || 0;
+    const gamma = event.gamma || 0;
+    const normalizedBeta = beta - 45;
+    const clampedX = THREE.MathUtils.clamp(normalizedBeta, -30, 30) * (Math.PI / 180);
+    const clampedY = THREE.MathUtils.clamp(gamma, -30, 30) * (Math.PI / 180);
+    gyroData.current = { x: clampedX * 0.4, y: clampedY * 0.4 };
+  }, []);
+
+  useEffect(() => {
+    const isCoarse = window.matchMedia('(pointer: coarse)').matches;
+    if (!isCoarse) return;
+
+    if (typeof window.DeviceOrientationEvent !== 'undefined' && typeof (window.DeviceOrientationEvent as any).requestPermission === 'function') {
+      setShowGyroButton(true);
+    } else {
+      window.addEventListener('deviceorientation', handleOrientation);
+    }
+
+    return () => {
+      window.removeEventListener('deviceorientation', handleOrientation);
+    };
+  }, [handleOrientation]);
+
+  const requestGyroPermission = async () => {
+    if (typeof window.DeviceOrientationEvent !== 'undefined' && typeof (window.DeviceOrientationEvent as any).requestPermission === 'function') {
+      try {
+        const permission = await (window.DeviceOrientationEvent as any).requestPermission();
+        if (permission === 'granted') {
+          window.addEventListener('deviceorientation', handleOrientation);
+          setShowGyroButton(false);
+        }
+      } catch (err) {
+        console.error('Gyroscope permission denied', err);
+      }
+    }
+  };
   const containerRef = useRef<HTMLElement>(null);
   const gsapRef = useRef<THREE.Group>(null);
   const controlsRef = useRef<any>(null);
@@ -380,7 +438,14 @@ export function InteractiveWatch() {
   useGSAP(() => {
     if (!modelReady || !containerRef.current || !gsapRef.current) return;
 
-    const tl = gsap.timeline();
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: containerRef.current,
+        start: 'top top',
+        end: '+=1200',
+        scrub: 1,
+      }
+    });
 
     gsap.set(gsapRef.current.position, { y: -2, z: 2 });
     gsap.set(gsapRef.current.rotation, { x: 0.2, y: -Math.PI / 4 });
@@ -435,7 +500,8 @@ export function InteractiveWatch() {
   }, [activeHotspot, isExploded]);
 
   return (
-    <section ref={containerRef} className="relative w-full h-screen bg-black overflow-hidden flex flex-col justify-center">
+    <section ref={containerRef} className="relative w-full h-[150vh] bg-black">
+      <div className="sticky top-0 w-full h-screen overflow-hidden flex flex-col justify-center">
       <div className="absolute inset-0 bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950" />
       
       <div className={clsx(
@@ -451,7 +517,8 @@ export function InteractiveWatch() {
       </div>
 
       <button 
-        onClick={() => setShowConfig(!showConfig)}
+        onClick={() => { luxurySounds.playTap(); setShowConfig(!showConfig); }}
+        onMouseEnter={luxurySounds.playHover}
         className={clsx(
           "absolute top-32 left-6 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-black/60 border border-white/20 text-white backdrop-blur-md transition-all duration-300 hover:bg-white/10 hover:border-primary hover:text-primary",
           showConfig ? "bg-primary text-black border-primary hover:bg-primary/90 hover:text-black shadow-[0_0_15px_rgba(212,175,55,0.4)]" : "",
@@ -480,7 +547,8 @@ export function InteractiveWatch() {
               {CONFIG_OPTIONS.dial.map(opt => (
                 <button
                   key={opt.id}
-                  onClick={() => setConfig(prev => ({ ...prev, dial: opt.id }))}
+                  onClick={() => { luxurySounds.playCrown(); setConfig(prev => ({ ...prev, dial: opt.id })); }}
+                  onMouseEnter={luxurySounds.playHover}
                   className={clsx(
                     "w-10 h-10 rounded-full border-2 transition-all duration-300 flex items-center justify-center relative group shadow-lg",
                     config.dial === opt.id ? "border-primary scale-110 shadow-[0_0_10px_rgba(212,175,55,0.4)]" : "border-white/20 hover:border-white/50 hover:scale-105"
@@ -500,7 +568,8 @@ export function InteractiveWatch() {
               {CONFIG_OPTIONS.case.map(opt => (
                 <button
                   key={opt.id}
-                  onClick={() => setConfig(prev => ({ ...prev, case: opt.id }))}
+                  onClick={() => { luxurySounds.playCrown(); setConfig(prev => ({ ...prev, case: opt.id })); }}
+                  onMouseEnter={luxurySounds.playHover}
                   className={clsx(
                     "py-3 px-4 rounded-lg border text-xs uppercase tracking-wider transition-all duration-300",
                     config.case === opt.id 
@@ -520,7 +589,8 @@ export function InteractiveWatch() {
               {CONFIG_OPTIONS.bracelet.map(opt => (
                 <button
                   key={opt.id}
-                  onClick={() => setConfig(prev => ({ ...prev, bracelet: opt.id }))}
+                  onClick={() => { luxurySounds.playCrown(); setConfig(prev => ({ ...prev, bracelet: opt.id })); }}
+                  onMouseEnter={luxurySounds.playHover}
                   className={clsx(
                     "py-3 px-4 rounded-lg border text-xs uppercase tracking-wider transition-all duration-300",
                     config.bracelet === opt.id 
@@ -547,17 +617,33 @@ export function InteractiveWatch() {
         </div>
       </div>
 
-      <div className={clsx("absolute bottom-12 left-1/2 -translate-x-1/2 z-50 flex gap-4 transition-all duration-500", activeHotspot ? "opacity-0 pointer-events-none translate-y-10" : "opacity-100 translate-y-0")}>
+      
+      <AnimatePresence>
+        {showGyroButton && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={requestGyroPermission}
+            className="absolute bottom-12 right-6 md:hidden z-50 w-12 h-12 bg-black/60 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white/70 hover:text-primary hover:border-primary/50 transition-colors"
+          >
+            <Smartphone size={20} />
+          </motion.button>
+        )}
+      </AnimatePresence>
+<div className={clsx("absolute bottom-12 left-1/2 -translate-x-1/2 z-50 flex gap-4 transition-all duration-500", activeHotspot ? "opacity-0 pointer-events-none translate-y-10" : "opacity-100 translate-y-0")}>
         {isExploded ? (
           <button 
-            onClick={() => setIsExploded(false)}
+            onClick={() => { luxurySounds.playTap(); setIsExploded(false); }}
+            onMouseEnter={luxurySounds.playHover}
             className="px-8 py-3 bg-white text-black font-semibold text-xs uppercase tracking-widest hover:bg-white/90 transition-all shadow-[0_0_20px_rgba(255,255,255,0.4)] rounded-full"
           >
             Reset View
           </button>
         ) : (
           <button 
-            onClick={() => { setIsExploded(true); setShowConfig(false); }}
+            onClick={() => { luxurySounds.playTap(); setIsExploded(true); setShowConfig(false); }}
+            onMouseEnter={luxurySounds.playHover}
             className="px-8 py-3 border border-white/30 text-white font-semibold text-xs uppercase tracking-widest hover:bg-white hover:text-black transition-all backdrop-blur-md rounded-full"
           >
             Explore Movement
@@ -577,7 +663,8 @@ export function InteractiveWatch() {
             <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent pointer-events-none" />
             <div className="relative">
               <button 
-                onClick={() => setActiveHotspot(null)}
+                onClick={() => { luxurySounds.playTap(); setActiveHotspot(null); }}
+                onMouseEnter={luxurySounds.playHover}
                 className="absolute -top-2 -right-2 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors backdrop-blur-md"
               >
                 <X size={16} />
@@ -601,7 +688,8 @@ export function InteractiveWatch() {
               )}
 
               <button 
-                onClick={() => setActiveHotspot(null)}
+                onClick={() => { luxurySounds.playTap(); setActiveHotspot(null); }}
+                onMouseEnter={luxurySounds.playHover}
                 className="mt-4 w-full py-3 border border-white/30 text-white/90 text-xs uppercase tracking-widest hover:bg-white hover:text-black transition-colors"
               >
                 Resume Exploration
@@ -650,6 +738,7 @@ export function InteractiveWatch() {
             onHotspotClick={(id) => setActiveHotspot(id)}
             config={config}
             isExploded={isExploded}
+            gyroData={gyroData}
           />
           
           <ContactShadows 
@@ -673,6 +762,7 @@ export function InteractiveWatch() {
           />
         </Canvas>
       </div>
+    </div>
     </section>
   );
 }

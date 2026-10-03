@@ -11,8 +11,10 @@ import { Heritage } from './components/sections/Heritage';
 import { Clarity } from './components/sections/Clarity';
 import { Specifications } from './components/sections/Specifications';
 import { Gallery } from './components/sections/Gallery';
+import { ProjectHighlights } from './components/sections/ProjectHighlights';
 import { Testimonials } from './components/sections/Testimonials';
 import { Contact } from './components/sections/Contact';
+import { CursorGlow } from './components/effects/CursorGlow';
 
 const InteractiveWatch = lazy(() => import('./components/sections/InteractiveWatch').then(m => ({ default: m.InteractiveWatch })));
 
@@ -36,6 +38,7 @@ function App() {
       </AnimatePresence>
 
       <div className="min-h-screen bg-background text-foreground font-sans">
+      <CursorGlow />
       <a 
         href="#main-content" 
         className="absolute -top-96 left-0 z-[999] bg-primary text-black px-4 py-2 focus:top-0 transition-all focus:outline-none"
@@ -56,6 +59,7 @@ function App() {
         <Clarity />
         <Specifications />
         <Gallery />
+        <ProjectHighlights />
         <Testimonials />
         <Contact />
       </main>
