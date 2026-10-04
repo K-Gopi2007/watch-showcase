@@ -16,8 +16,10 @@ import { Contact } from './components/sections/Contact';
 import { CursorGlow } from './components/effects/CursorGlow';
 
 import { LuxuryReveal } from './components/sections/LuxuryReveal';
+import { HeroVideo } from './components/sections/HeroVideo';
 
-import { LuxuryVideoHero } from './components/sections/LuxuryVideoHero';
+import { Comparison } from './components/sections/Comparison';
+import { VirtualWrist } from './components/sections/VirtualWrist';
 
 const InteractiveWatch = lazy(() => import('./components/sections/InteractiveWatch').then(m => ({ default: m.InteractiveWatch })));
 
@@ -52,10 +54,12 @@ function App() {
       
       <main id="main-content">
         <LuxuryReveal />
-        <LuxuryVideoHero />
+        <HeroVideo />
         <Suspense fallback={<InteractiveWatchFallback />}>
           <InteractiveWatch />
         </Suspense>
+        <Comparison />
+        <VirtualWrist />
         <Statistics />
         <About />
         <Story />

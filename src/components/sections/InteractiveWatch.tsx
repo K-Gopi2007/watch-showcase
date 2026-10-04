@@ -95,15 +95,20 @@ function CameraLight({ active, hotspotPosition }: { active: boolean, hotspotPosi
 
 function WatchModel({ 
   gsapRef, 
+  floatGroupRef,
   onLoaded,
   controlsRef,
   activeHotspot,
   onHotspotClick,
   config,
   isExploded,
-  gyroData
+  gyroData,
+  setIsAnimatingCamera,
+  isMobile,
+  isDragging
 }: { 
   gsapRef: React.RefObject<THREE.Group | null>;
+  floatGroupRef: React.RefObject<THREE.Group | null>;
   onLoaded: () => void;
   controlsRef: React.RefObject<any>;
   activeHotspot: string | null;
@@ -111,13 +116,16 @@ function WatchModel({
   config: { dial: string, case: string, bracelet: string };
   isExploded: boolean;
   gyroData?: React.MutableRefObject<{x: number, y: number}>;
+  setIsAnimatingCamera: (v: boolean) => void;
+  isMobile: boolean;
+  isDragging: boolean;
 }) {
   const { scene } = useGLTF('/models/watch.glb/model.glb') as any;
 
   const { clonedScene, clonedMaterials } = React.useMemo(() => {
     if (!scene) return { clonedScene: null, clonedMaterials: null };
     const s = scene.clone();
-    const mats: any = {};
+    const mats: Record<string, THREE.Material> = {};
     s.traverse((node: any) => {
       if (node.isMesh && node.material) {
         node.material = node.material.clone();
@@ -138,16 +146,16 @@ function WatchModel({
   const explodedClones = React.useMemo(() => {
     if (!scene) return [];
     const styles = [
-      { label: "Crystal", zOffset: 0.3, opacity: 0.15, wireframe: false, color: "#ffffff" },
-      { label: "Bezel", zOffset: 0.2, opacity: 0.5, wireframe: false, color: "#111111" },
-      { label: "Dial", zOffset: 0.1, opacity: 0.8, wireframe: false, color: "#0033aa" },
-      { label: "Movement", zOffset: 0, opacity: 0.9, wireframe: true, color: "#d4af37" },
-      { label: "Case", zOffset: -0.1, opacity: 0.7, wireframe: false, color: "#ffffff" },
-      { label: "Bracelet", zOffset: -0.2, opacity: 0.9, wireframe: false, color: "#aaaaaa" },
+      { label: "Crystal", yOffset: 4.0, opacity: 0.15, wireframe: false, color: "#ffffff" },
+      { label: "Bezel", yOffset: 2.5, opacity: 0.5, wireframe: false, color: "#111111" },
+      { label: "Dial", yOffset: 1.0, opacity: 0.8, wireframe: false, color: "#0033aa" },
+      { label: "Movement", yOffset: -0.5, opacity: 0.9, wireframe: true, color: "#d4af37" },
+      { label: "Case", yOffset: -2.0, opacity: 0.7, wireframe: false, color: "#ffffff" },
+      { label: "Bracelet", yOffset: -3.5, opacity: 0.9, wireframe: false, color: "#aaaaaa" },
     ];
     return styles.map((style) => {
       const c = scene.clone();
-      const mats: any[] = [];
+      const mats: THREE.Material[] = [];
       c.traverse((node: any) => {
         if (node.isMesh) {
           node.material = node.material.clone();
@@ -163,6 +171,17 @@ function WatchModel({
   }, [scene]);
 
   useEffect(() => {
+    return () => {
+      if (clonedMaterials) {
+        Object.values(clonedMaterials).forEach((mat) => mat.dispose());
+      }
+      explodedClones.forEach(clone => {
+        clone.materials.forEach(mat => mat.dispose());
+      });
+    };
+  }, [clonedMaterials, explodedClones]);
+
+  useEffect(() => {
     if (scene) {
       onLoaded();
     }
@@ -170,7 +189,7 @@ function WatchModel({
 
   useEffect(() => {
     if (!clonedMaterials || !clonedMaterials.Material_01) return;
-    const material = clonedMaterials.Material_01;
+    const material = clonedMaterials.Material_01 as THREE.MeshStandardMaterial;
 
     const caseOpt = CONFIG_OPTIONS.case.find(c => c.id === config.case);
     const dialOpt = CONFIG_OPTIONS.dial.find(d => d.id === config.dial);
@@ -189,30 +208,30 @@ function WatchModel({
         g: targetColor.g,
         b: targetColor.b,
         duration: 1,
-        ease: 'power2.out',
-        onUpdate: () => { material.needsUpdate = true; }
+        ease: 'power2.out'
       });
       gsap.to(material, {
         metalness: caseOpt.metalness,
         roughness: caseOpt.roughness,
         duration: 1,
-        ease: 'power2.out',
-        onUpdate: () => { material.needsUpdate = true; }
+        ease: 'power2.out'
       });
     }
   }, [config, clonedMaterials]);
 
   useEffect(() => {
     if (!clonedMaterials || !clonedMaterials.Material_01) return;
+    const mainMaterial = clonedMaterials.Material_01 as THREE.MeshStandardMaterial;
     
     if (isExploded) {
-      gsap.to(clonedMaterials.Material_01, { 
+      mainMaterial.transparent = true;
+      mainMaterial.needsUpdate = true;
+      
+      gsap.to(mainMaterial, { 
         opacity: 0, 
         duration: 1.5, 
-        ease: "power3.inOut",
-        onUpdate: () => { clonedMaterials.Material_01.needsUpdate = true; } 
+        ease: "power3.inOut"
       });
-      clonedMaterials.Material_01.transparent = true;
 
       if (hotspotsGroupRef.current) {
         gsap.to(hotspotsGroupRef.current.position, { y: 10, duration: 1.5 });
@@ -225,20 +244,25 @@ function WatchModel({
             target: controlsRef.current.target.clone()
           });
         }
+        setIsAnimatingCamera(true);
         gsap.to(camera.position, { 
           x: 12, y: 6, z: 8, 
           duration: 1.5, 
-          ease: "power3.inOut",
-          onUpdate: () => controlsRef.current?.update()
+          ease: "power3.inOut"
         });
-        gsap.to(controlsRef.current.target, { x: 0, y: 0, z: 0, duration: 1.5, ease: "power3.inOut" });
+        gsap.to(controlsRef.current.target, { 
+          x: 0, y: 0, z: 0, 
+          duration: 1.5, 
+          ease: "power3.inOut",
+          onComplete: () => setIsAnimatingCamera(false)
+        });
       }
 
       explodedRefs.current.forEach((ref, idx) => {
         if (ref) {
           ref.visible = true;
           const cloneData = explodedClones[idx];
-          gsap.to(ref.position, { z: cloneData.zOffset, duration: 1.5, ease: "power3.inOut" });
+          gsap.to(ref.position, { y: cloneData.yOffset, duration: 1.5, ease: "power3.inOut" });
           cloneData.materials.forEach((mat) => {
             gsap.to(mat, { opacity: cloneData.opacity, duration: 1.5, ease: "power3.inOut" });
           });
@@ -246,11 +270,14 @@ function WatchModel({
       });
 
     } else {
-      gsap.to(clonedMaterials.Material_01, { 
+      gsap.to(mainMaterial, { 
         opacity: 1, 
         duration: 1.5, 
         ease: "power3.inOut", 
-        onUpdate: () => { clonedMaterials.Material_01.needsUpdate = true; }
+        onComplete: () => { 
+          mainMaterial.transparent = false;
+          mainMaterial.needsUpdate = true; 
+        }
       });
       
       if (hotspotsGroupRef.current) {
@@ -259,7 +286,7 @@ function WatchModel({
 
       explodedRefs.current.forEach((ref, idx) => {
         if (ref) {
-          gsap.to(ref.position, { z: 0, duration: 1.5, ease: "power3.inOut" });
+          gsap.to(ref.position, { y: 0, duration: 1.5, ease: "power3.inOut" });
           const cloneData = explodedClones[idx];
           cloneData.materials.forEach((mat) => {
             gsap.to(mat, { opacity: 0, duration: 1.5, ease: "power3.inOut", onComplete: () => { ref.visible = false; } });
@@ -267,18 +294,27 @@ function WatchModel({
         }
       });
     }
-  }, [isExploded, clonedMaterials, camera, controlsRef, explodedClones, activeHotspot, originalCamera]);
+  }, [isExploded, clonedMaterials, camera, controlsRef, explodedClones, activeHotspot, originalCamera, setIsAnimatingCamera]);
 
-  useFrame((_state, delta) => {
-    if (autoRotateRef.current && !activeHotspot && !isExploded) {
-      // Removing this continuous rotation to prevent fighting with GSAP scroll and OrbitControls.
-      // autoRotateRef.current.rotation.y += delta * 0.2;
-    }
-    
+  useFrame((state, delta) => {
     if (mainGroupRef.current) {
-      if (gyroData?.current && !activeHotspot && !isExploded) {
-        mainGroupRef.current.rotation.x = THREE.MathUtils.damp(mainGroupRef.current.rotation.x, gyroData.current.x, 4, delta);
-        mainGroupRef.current.rotation.y = THREE.MathUtils.damp(mainGroupRef.current.rotation.y, gyroData.current.y, 4, delta);
+      if (!activeHotspot && !isExploded) {
+        let targetX = 0;
+        let targetY = 0;
+        
+        if (isMobile) {
+          if (gyroData?.current) {
+            targetX = gyroData.current.x;
+            targetY = gyroData.current.y;
+          }
+        } else if (!isDragging) {
+          const MAX_ROTATION = 5 * (Math.PI / 180);
+          targetX = state.pointer.y * MAX_ROTATION;
+          targetY = state.pointer.x * MAX_ROTATION;
+        }
+
+        mainGroupRef.current.rotation.x = THREE.MathUtils.damp(mainGroupRef.current.rotation.x, targetX, 4, delta);
+        mainGroupRef.current.rotation.y = THREE.MathUtils.damp(mainGroupRef.current.rotation.y, targetY, 4, delta);
       } else {
         mainGroupRef.current.rotation.x = THREE.MathUtils.damp(mainGroupRef.current.rotation.x, 0, 4, delta);
         mainGroupRef.current.rotation.y = THREE.MathUtils.damp(mainGroupRef.current.rotation.y, 0, 4, delta);
@@ -288,6 +324,7 @@ function WatchModel({
 
   useEffect(() => {
     if (activeHotspot === null && originalCamera && controlsRef.current && !isExploded) {
+      setIsAnimatingCamera(true);
       gsap.to(controlsRef.current.target, {
         x: originalCamera.target.x, 
         y: originalCamera.target.y, 
@@ -300,11 +337,12 @@ function WatchModel({
         y: originalCamera.position.y, 
         z: originalCamera.position.z, 
         duration: 1.5, 
-        ease: 'power3.inOut'
+        ease: 'power3.inOut',
+        onComplete: () => setIsAnimatingCamera(false)
       });
       setOriginalCamera(null);
     }
-  }, [activeHotspot, originalCamera, camera, controlsRef, isExploded]);
+  }, [activeHotspot, originalCamera, camera, controlsRef, isExploded, setIsAnimatingCamera]);
 
   const handleHotspotClick = (id: string, groupRef: React.RefObject<THREE.Group | null>, data: typeof HOTSPOTS[0]) => {
     if (activeHotspot === id) return;
@@ -325,6 +363,7 @@ function WatchModel({
       const cameraPosition = new THREE.Vector3();
       cameraPosition.copy(targetPosition).add(data.offset);
 
+      setIsAnimatingCamera(true);
       gsap.to(controlsRef.current.target, {
         x: targetPosition.x,
         y: targetPosition.y,
@@ -338,45 +377,49 @@ function WatchModel({
         y: cameraPosition.y,
         z: cameraPosition.z,
         duration: 1.5,
-        ease: 'power3.inOut'
+        ease: 'power3.inOut',
+        onComplete: () => setIsAnimatingCamera(false)
       });
     }
   };
 
   return (
     <group ref={gsapRef}>
-      <group ref={autoRotateRef}>
-        <group ref={mainGroupRef}>
-          {clonedScene && <primitive object={clonedScene} />}
-        </group>
-        
-        {explodedClones.map((clone, idx) => (
-          <group 
-            key={idx} 
-            ref={(el) => { if(el) explodedRefs.current[idx] = el; }}
-          >
-            <primitive object={clone.mesh} />
-            <Html position={[0, 2.5, 0]} center zIndexRange={[100, 0]}>
-              <div className={clsx(
-                "text-white text-[10px] md:text-xs tracking-[0.2em] uppercase whitespace-nowrap bg-black/60 px-4 py-2 rounded-full border border-white/20 backdrop-blur-md transition-opacity duration-1000",
-                isExploded ? "opacity-100" : "opacity-0"
-              )}>
-                {clone.label}
-              </div>
-            </Html>
+      <group ref={floatGroupRef}>
+        <group ref={autoRotateRef}>
+          <group ref={mainGroupRef}>
+            {clonedScene && <primitive object={clonedScene} />}
           </group>
-        ))}
-
-        <group ref={hotspotsGroupRef}>
-          {HOTSPOTS.map((hotspot) => (
-            <Hotspot 
-              key={hotspot.id} 
-              data={hotspot} 
-              isActive={activeHotspot === hotspot.id} 
-              isAnyActive={activeHotspot !== null}
-              onClick={(ref) => handleHotspotClick(hotspot.id, ref, hotspot)} 
-            />
+          
+          {explodedClones.map((clone, idx) => (
+            <group 
+              key={idx} 
+              ref={(el) => { if(el) explodedRefs.current[idx] = el; }}
+              visible={false}
+            >
+              <primitive object={clone.mesh} />
+              <Html position={[0, 2.5, 0]} center zIndexRange={[100, 0]}>
+                <div className={clsx(
+                  "text-white text-[10px] md:text-xs tracking-[0.2em] uppercase whitespace-nowrap bg-black/60 px-4 py-2 rounded-full border border-white/20 backdrop-blur-md transition-opacity duration-1000",
+                  isExploded ? "opacity-100" : "opacity-0"
+                )}>
+                  {clone.label}
+                </div>
+              </Html>
+            </group>
           ))}
+
+          <group ref={hotspotsGroupRef}>
+            {HOTSPOTS.map((hotspot) => (
+              <Hotspot 
+                key={hotspot.id} 
+                data={hotspot} 
+                isActive={activeHotspot === hotspot.id} 
+                isAnyActive={activeHotspot !== null}
+                onClick={(ref) => handleHotspotClick(hotspot.id, ref, hotspot)} 
+              />
+            ))}
+          </group>
         </group>
       </group>
       
@@ -402,6 +445,7 @@ export function InteractiveWatch() {
 
   useEffect(() => {
     const isCoarse = window.matchMedia('(pointer: coarse)').matches;
+    setIsMobile(isCoarse);
     if (!isCoarse) return;
 
     if (typeof window.DeviceOrientationEvent !== 'undefined' && typeof (window.DeviceOrientationEvent as any).requestPermission === 'function') {
@@ -430,11 +474,16 @@ export function InteractiveWatch() {
   };
   const containerRef = useRef<HTMLElement>(null);
   const gsapRef = useRef<THREE.Group>(null);
+  const floatGroupRef = useRef<THREE.Group>(null);
+  const sweepLightRef = useRef<THREE.SpotLight>(null);
   const controlsRef = useRef<any>(null);
   const [modelReady, setModelReady] = useState(false);
   const handleLoaded = useCallback(() => setModelReady(true), []);
   const [activeHotspot, setActiveHotspot] = useState<string | null>(null);
   const [isExploded, setIsExploded] = useState(false);
+  const [isAnimatingCamera, setIsAnimatingCamera] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   
   const [config, setConfig] = useState({
     dial: 'green',
@@ -465,7 +514,7 @@ export function InteractiveWatch() {
   }, [activeHotspot]);
 
   useGSAP(() => {
-    if (!modelReady || !containerRef.current || !gsapRef.current) return;
+    if (!modelReady || !containerRef.current || !gsapRef.current || !floatGroupRef.current) return;
 
     const tl = gsap.timeline({
       scrollTrigger: {
@@ -508,7 +557,17 @@ export function InteractiveWatch() {
       ease: "none"
     }, 1);
 
-    gsap.to(gsapRef.current.position, {
+    if (sweepLightRef.current) {
+      gsap.set(sweepLightRef.current.position, { x: -10, y: 10, z: 8 });
+      tl.to(sweepLightRef.current.position, {
+        x: 10,
+        y: -10,
+        duration: 2,
+        ease: "sine.inOut"
+      }, 0);
+    }
+
+    gsap.to(floatGroupRef.current.position, {
       y: 0.15,
       duration: 2,
       yoyo: true,
@@ -538,7 +597,7 @@ export function InteractiveWatch() {
         activeHotspot || isExploded ? "opacity-10 blur-xl scale-95" : "opacity-100 blur-0 scale-100"
       )}>
         <div className="relative w-full text-center h-20 flex justify-center">
-          <h2 className="text-1 absolute text-3xl md:text-5xl font-light text-white tracking-widest uppercase opacity-0">
+          <h2 className="text-1 absolute text-2xl md:text-5xl font-light text-white tracking-widest uppercase opacity-0 px-4">
             Explore Every Detail
           </h2>
         </div>
@@ -549,7 +608,7 @@ export function InteractiveWatch() {
         onClick={() => { luxurySounds.playTap(); setShowConfig(!showConfig); }}
         onMouseEnter={luxurySounds.playHover}
         className={clsx(
-          "absolute top-32 left-6 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-black/60 border border-white/20 text-white backdrop-blur-md transition-all duration-300 hover:bg-white/10 hover:border-primary hover:text-primary",
+          "absolute top-32 left-6 md:left-8 z-50 w-12 h-12 flex items-center justify-center rounded-full bg-black/60 border border-white/20 text-white backdrop-blur-md transition-all duration-300 hover:bg-white/10 hover:border-primary hover:text-primary",
           showConfig ? "bg-primary text-black border-primary hover:bg-primary/90 hover:text-black shadow-[0_0_15px_rgba(212,175,55,0.4)]" : "",
           isExploded || activeHotspot ? "opacity-0 pointer-events-none" : "opacity-100"
         )}
@@ -559,7 +618,7 @@ export function InteractiveWatch() {
       </button>
 
       <div className={clsx(
-        "absolute top-48 left-6 md:left-12 z-40 w-[calc(100%-3rem)] md:w-80 bg-black/60 backdrop-blur-xl border border-white/20 p-6 md:p-8 rounded-2xl transform transition-all duration-700 shadow-2xl overflow-hidden",
+        "absolute top-48 left-6 md:left-12 z-40 w-[calc(100%-3rem)] md:w-80 bg-black/60 backdrop-blur-xl border border-white/20 p-6 md:p-8 rounded-2xl transform transition-all duration-700 shadow-2xl overflow-hidden max-h-[60vh] overflow-y-auto",
         showConfig && !isExploded && !activeHotspot ? "translate-x-0 opacity-100 pointer-events-auto" : "-translate-x-12 md:-translate-x-24 opacity-0 pointer-events-none"
       )}>
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
@@ -584,6 +643,7 @@ export function InteractiveWatch() {
                   )}
                   style={{ backgroundColor: opt.color }}
                   title={opt.label}
+                  aria-label={`Select ${opt.label} dial`}
                 >
                    {config.dial === opt.id && <Check size={14} className="text-white mix-blend-difference" />}
                 </button>
@@ -605,6 +665,7 @@ export function InteractiveWatch() {
                       ? "bg-white/10 border-primary text-primary shadow-[0_0_10px_rgba(212,175,55,0.2)]" 
                       : "bg-black/40 border-white/20 text-white/70 hover:border-white/50 hover:text-white"
                   )}
+                  aria-label={`Select ${opt.label} case`}
                 >
                   {opt.label}
                 </button>
@@ -626,6 +687,7 @@ export function InteractiveWatch() {
                       ? "bg-white/10 border-primary text-primary shadow-[0_0_10px_rgba(212,175,55,0.2)]" 
                       : "bg-black/40 border-white/20 text-white/70 hover:border-white/50 hover:text-white"
                   )}
+                  aria-label={`Select ${opt.label} bracelet`}
                 >
                   {opt.label}
                 </button>
@@ -655,17 +717,19 @@ export function InteractiveWatch() {
             exit={{ opacity: 0, scale: 0.8 }}
             onClick={requestGyroPermission}
             className="absolute bottom-12 right-6 md:hidden z-50 w-12 h-12 bg-black/60 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white/70 hover:text-primary hover:border-primary/50 transition-colors"
+            aria-label="Enable Gyroscope"
           >
             <Smartphone size={20} />
           </motion.button>
         )}
       </AnimatePresence>
-<div className={clsx("absolute bottom-12 left-1/2 -translate-x-1/2 z-50 flex gap-4 transition-all duration-500", activeHotspot ? "opacity-0 pointer-events-none translate-y-10" : "opacity-100 translate-y-0")}>
+      <div className={clsx("absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 z-50 flex gap-4 transition-all duration-500", activeHotspot ? "opacity-0 pointer-events-none translate-y-10" : "opacity-100 translate-y-0")}>
         {isExploded ? (
           <button 
             onClick={() => { luxurySounds.playTap(); setIsExploded(false); setShowConfig(true); }}
             onMouseEnter={luxurySounds.playHover}
-            className="px-8 py-3 bg-white text-black font-semibold text-xs uppercase tracking-widest hover:bg-white/90 transition-all shadow-[0_0_20px_rgba(255,255,255,0.4)] rounded-full"
+            className="px-6 md:px-8 py-3 bg-white text-black font-semibold text-xs uppercase tracking-widest hover:bg-white/90 transition-all shadow-[0_0_20px_rgba(255,255,255,0.4)] rounded-full whitespace-nowrap"
+            aria-label="Reset View"
           >
             Reset View
           </button>
@@ -673,7 +737,8 @@ export function InteractiveWatch() {
           <button 
             onClick={() => { luxurySounds.playTap(); setIsExploded(true); setShowConfig(false); }}
             onMouseEnter={luxurySounds.playHover}
-            className="px-8 py-3 border border-white/30 text-white font-semibold text-xs uppercase tracking-widest hover:bg-white hover:text-black transition-all backdrop-blur-md rounded-full"
+            className="px-6 md:px-8 py-3 border border-white/30 text-white font-semibold text-xs uppercase tracking-widest hover:bg-white hover:text-black transition-all backdrop-blur-md rounded-full whitespace-nowrap"
+            aria-label="Explore Movement"
           >
             Explore Movement
           </button>
@@ -681,12 +746,12 @@ export function InteractiveWatch() {
       </div>
 
       <div className={clsx(
-        "absolute inset-0 z-30 pointer-events-none flex items-end md:items-center justify-end p-6 pb-12 md:p-16 transition-all duration-1000",
+        "absolute inset-0 z-30 pointer-events-none flex items-end md:items-center justify-end p-4 md:p-16 transition-all duration-1000",
         activeHotspot ? "opacity-100" : "opacity-0"
       )}>
         {displayData && (
           <div className={clsx(
-            "w-full md:w-96 bg-black/60 backdrop-blur-xl border border-white/20 p-8 rounded-2xl pointer-events-auto transform transition-all duration-700 shadow-2xl relative overflow-hidden",
+            "w-full md:w-96 bg-black/60 backdrop-blur-xl border border-white/20 p-6 md:p-8 rounded-2xl pointer-events-auto transform transition-all duration-700 shadow-2xl relative overflow-hidden",
             activeHotspot ? "translate-y-0 md:translate-x-0 opacity-100" : "translate-y-12 md:translate-y-0 md:translate-x-12 opacity-0"
           )}>
             <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent pointer-events-none" />
@@ -695,6 +760,7 @@ export function InteractiveWatch() {
                 onClick={() => { luxurySounds.playTap(); setActiveHotspot(null); }}
                 onMouseEnter={luxurySounds.playHover}
                 className="absolute -top-2 -right-2 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors backdrop-blur-md"
+                aria-label="Close feature focus"
               >
                 <X size={16} />
               </button>
@@ -702,7 +768,7 @@ export function InteractiveWatch() {
                 <div className="w-6 h-[1px] bg-primary"></div>
                 Feature Focus
               </div>
-              <h3 className="text-white text-3xl font-light tracking-wide mb-4">{displayData.title}</h3>
+              <h3 className="text-white text-2xl md:text-3xl font-light tracking-wide mb-4">{displayData.title}</h3>
               <p className="text-white/70 text-sm leading-relaxed font-light mb-6">{displayData.description}</p>
               
               {displayData.specs && (
@@ -729,10 +795,20 @@ export function InteractiveWatch() {
       </div>
 
       <div className="relative z-10 w-full h-full cursor-grab active:cursor-grabbing">
-        <Canvas shadows camera={{ position: [0, 0, 10], fov: 45 }} className="touch-pan-y">
+        <Canvas dpr={[1, 2]} shadows camera={{ position: [0, 0, 10], fov: 45 }} className="touch-pan-y">
           <Environment files="/city_small.hdr" environmentIntensity={1.5} />
           <ambientLight intensity={1.5} />
           
+          <spotLight 
+            ref={sweepLightRef}
+            position={[-10, 10, 8]} 
+            angle={0.2} 
+            penumbra={1} 
+            intensity={activeHotspot || isExploded ? 0 : 30} 
+            color="#ffffff"
+            distance={40}
+          />
+
           <spotLight 
             position={[5, 8, 5]} 
             angle={0.25} 
@@ -761,6 +837,7 @@ export function InteractiveWatch() {
           
           <WatchModel 
             gsapRef={gsapRef} 
+            floatGroupRef={floatGroupRef}
             onLoaded={handleLoaded} 
             controlsRef={controlsRef}
             activeHotspot={activeHotspot}
@@ -768,6 +845,9 @@ export function InteractiveWatch() {
             config={config}
             isExploded={isExploded}
             gyroData={gyroData}
+            setIsAnimatingCamera={setIsAnimatingCamera}
+            isMobile={isMobile}
+            isDragging={isDragging}
           />
           
           <ContactShadows 
@@ -787,7 +867,9 @@ export function InteractiveWatch() {
             minDistance={2} 
             maxDistance={15}
             makeDefault 
-            enabled={!activeHotspot && !isExploded}
+            enabled={!activeHotspot && !isExploded && !isAnimatingCamera}
+            onStart={() => setIsDragging(true)}
+            onEnd={() => setIsDragging(false)}
           />
         </Canvas>
       </div>
