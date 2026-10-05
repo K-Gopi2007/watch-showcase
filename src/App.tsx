@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { Navbar } from './components/layout/Navbar';
 import { IntroSequence } from './components/layout/IntroSequence';
@@ -20,18 +20,7 @@ import { HeroVideo } from './components/sections/HeroVideo';
 
 import { Comparison } from './components/sections/Comparison';
 import { VirtualWrist } from './components/sections/VirtualWrist';
-
-const InteractiveWatch = lazy(() => import('./components/sections/InteractiveWatch').then(m => ({ default: m.InteractiveWatch })));
-
-const InteractiveWatchFallback = () => (
-  <section className="relative w-full h-[100vh] bg-black flex flex-col items-center justify-center border-b border-white/10">
-    <div className="absolute inset-0 bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950" />
-    <div className="relative z-10 flex flex-col items-center">
-      <div className="w-16 h-16 rounded-full border-t-2 border-r-2 border-primary animate-spin opacity-50" />
-      <p className="text-primary mt-6 font-mono text-xs tracking-[0.2em] animate-pulse">LOADING 3D EXPERIENCE</p>
-    </div>
-  </section>
-);
+import { CinematicWatch } from './components/sections/CinematicWatch';
 
 function App() {
   const [introDone, setIntroDone] = useState(false);
@@ -55,9 +44,7 @@ function App() {
       <main id="main-content">
         <LuxuryReveal />
         <HeroVideo />
-        <Suspense fallback={<InteractiveWatchFallback />}>
-          <InteractiveWatch />
-        </Suspense>
+        <CinematicWatch />
         <Comparison />
         <VirtualWrist />
         <Statistics />

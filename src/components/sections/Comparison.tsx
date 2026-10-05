@@ -1,11 +1,8 @@
-/* eslint-disable react/immutability, react/set-state-in-effect */
 import React, { useState } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { useGLTF, OrbitControls, Environment, ContactShadows } from '@react-three/drei';
-import * as THREE from 'three';
 import clsx from 'clsx';
 import { luxurySounds } from '../audio/LuxurySounds';
 import { Check } from 'lucide-react';
+import watchFront from '../../assets/watch/front.webp';
 
 const CONFIG_OPTIONS = {
   dial: [
@@ -14,70 +11,19 @@ const CONFIG_OPTIONS = {
     { id: 'green', label: 'Green', color: '#0f5132' }
   ],
   case: [
-    { id: 'steel', label: 'Steel', color: '#d7d7d7', metalness: 0.9, roughness: 0.35 },
-    { id: 'gold', label: 'Gold', color: '#d4af37', metalness: 1, roughness: 0.15 }
+    { id: 'steel', label: 'Oystersteel', metalness: 0.8, roughness: 0.2, color: '#f0f0f0' },
+    { id: 'gold', label: 'Yellow Gold', metalness: 1.0, roughness: 0.15, color: '#d4af37' }
+  ],
+  bracelet: [
+    { id: 'oyster', label: 'Oyster' },
+    { id: 'jubilee', label: 'Jubilee' }
   ]
 };
 
 const WATCH_SPECS = {
-  steel: { weight: '155g', material: 'Oystersteel', depth: '300m', reserve: '70 hours' },
-  gold: { weight: '220g', material: '18ct Yellow Gold', depth: '300m', reserve: '70 hours' }
+  steel: { material: 'Oystersteel', weight: '155g', depth: '300m (1,000 ft)', reserve: '70 Hours' },
+  gold: { material: '18 ct Yellow Gold', weight: '228g', depth: '300m (1,000 ft)', reserve: '70 Hours' }
 };
-
-function WatchModelClone({ config }: { config: { dial: string, case: string } }) {
-  const { scene } = useGLTF('/models/watch.glb/model.glb') as any;
-  
-  const { clonedScene, clonedMaterials } = React.useMemo(() => {
-    if (!scene) return { clonedScene: null, clonedMaterials: null };
-    const s = scene.clone();
-    const mats: Record<string, THREE.Material> = {};
-    s.traverse((node: any) => {
-      if (node.isMesh && node.material) {
-        node.material = node.material.clone();
-        mats[node.material.name] = node.material;
-      }
-    });
-    return { clonedScene: s, clonedMaterials: mats };
-  }, [scene]);
-
-  React.useEffect(() => {
-    return () => {
-      if (clonedMaterials) {
-        Object.values(clonedMaterials).forEach((mat) => mat.dispose());
-      }
-    };
-  }, [clonedMaterials]);
-
-  React.useEffect(() => {
-    if (!clonedMaterials || !clonedMaterials.Material_01) return;
-    const material = clonedMaterials.Material_01 as THREE.MeshStandardMaterial;
-    
-    const caseOpt = CONFIG_OPTIONS.case.find(c => c.id === config.case);
-    const dialOpt = CONFIG_OPTIONS.dial.find(d => d.id === config.dial);
-
-    if (caseOpt && dialOpt) {
-      const targetColor = new THREE.Color(caseOpt.color);
-      if (config.case === 'steel') {
-        targetColor.lerp(new THREE.Color(dialOpt.color), 0.15);
-      } else {
-        targetColor.lerp(new THREE.Color(dialOpt.color), 0.05);
-      }
-      
-      material.color.copy(targetColor);
-      material.metalness = caseOpt.metalness;
-      material.roughness = caseOpt.roughness;
-      material.needsUpdate = true;
-    }
-  }, [config, clonedMaterials]);
-
-  return (
-    <group position={[0, -1, 0]}>
-      {clonedScene && <primitive object={clonedScene} />}
-    </group>
-  );
-}
-
-useGLTF.preload('/models/watch.glb/model.glb');
 
 function ComparePanel({ 
   config, 
@@ -96,20 +42,16 @@ function ComparePanel({
         <h3 className="text-white text-sm tracking-[0.2em] uppercase font-light">{title}</h3>
       </div>
       
-      <div className="flex-1 relative cursor-grab active:cursor-grabbing min-h-[40vh] md:min-h-0 bg-neutral-950">
-        <React.Suspense fallback={<div className="absolute inset-0 flex items-center justify-center text-white/50 text-xs tracking-widest">LOADING...</div>}>
-          <Canvas dpr={[1, 2]} shadows={{ type: THREE.PCFShadowMap }} camera={{ position: [0, 0, 8], fov: 45 }}>
-            <Environment files="/city_small.hdr" environmentIntensity={1.5} />
-            <ambientLight intensity={1.5} />
-            <spotLight position={[5, 8, 5]} angle={0.25} penumbra={0.5} intensity={4} castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0001} />
-            <spotLight position={[-5, 5, 5]} angle={0.3} penumbra={1} intensity={1.5} color="#f0f6ff" />
-            
-            <WatchModelClone config={config} />
-            
-            <ContactShadows position={[0, -2, 0]} opacity={0.65} scale={15} blur={2.5} far={4} color="#000000" />
-            <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={1.0} minDistance={4} maxDistance={12} />
-          </Canvas>
-        </React.Suspense>
+      <div className="flex-1 relative min-h-[40vh] md:min-h-0 bg-neutral-950 flex items-center justify-center p-8 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-white/5 to-transparent opacity-50" />
+        <img 
+          src={watchFront} 
+          alt="Luxury Watch Model"
+          className="relative z-10 w-auto h-full max-h-[500px] object-contain object-center drop-shadow-2xl transition-all duration-1000 ease-out scale-105 hover:scale-110"
+          style={{
+            filter: config.case === 'gold' ? 'sepia(0.3) saturate(1.5) hue-rotate(-10deg) brightness(1.1)' : 'grayscale(0.2) contrast(1.1)'
+          }}
+        />
       </div>
 
       <div className="p-6 md:p-8 bg-black/80 backdrop-blur-xl border-t border-white/10">
@@ -208,4 +150,3 @@ export function Comparison() {
     </section>
   );
 }
-
