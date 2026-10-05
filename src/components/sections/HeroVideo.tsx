@@ -11,7 +11,7 @@ export function HeroVideo() {
   useEffect(() => {
     if (videoRef.current) {
       if (isInView) {
-        videoRef.current.play().catch(e => console.log('Video play failed:', e));
+        videoRef.current.play().catch(() => console.warn('Autoplay blocked'));
       } else {
         videoRef.current.pause();
       }
@@ -34,13 +34,14 @@ export function HeroVideo() {
         <video
           ref={videoRef}
           src="/videos/watch-video.mp4"
-          poster="/images/poster.webp"
+          poster="/og-image.webp"
           className="w-full h-full object-cover"
           autoPlay
           muted
           playsInline
           loop
           preload="metadata"
+          onError={() => console.warn("Video unavailable")}
           onLoadedData={() => setIsVideoLoaded(true)}
         />
       </motion.div>

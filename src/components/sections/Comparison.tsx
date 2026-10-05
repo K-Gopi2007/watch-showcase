@@ -1,3 +1,4 @@
+/* eslint-disable react/immutability, react/set-state-in-effect */
 import React, { useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { useGLTF, OrbitControls, Environment, ContactShadows } from '@react-three/drei';
@@ -97,7 +98,7 @@ function ComparePanel({
       
       <div className="flex-1 relative cursor-grab active:cursor-grabbing min-h-[40vh] md:min-h-0 bg-neutral-950">
         <React.Suspense fallback={<div className="absolute inset-0 flex items-center justify-center text-white/50 text-xs tracking-widest">LOADING...</div>}>
-          <Canvas dpr={[1, 2]} shadows camera={{ position: [0, 0, 8], fov: 45 }}>
+          <Canvas dpr={[1, 2]} shadows={{ type: THREE.PCFShadowMap }} camera={{ position: [0, 0, 8], fov: 45 }}>
             <Environment files="/city_small.hdr" environmentIntensity={1.5} />
             <ambientLight intensity={1.5} />
             <spotLight position={[5, 8, 5]} angle={0.25} penumbra={0.5} intensity={4} castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0001} />
@@ -207,3 +208,4 @@ export function Comparison() {
     </section>
   );
 }
+

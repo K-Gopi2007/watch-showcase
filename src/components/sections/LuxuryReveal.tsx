@@ -9,7 +9,7 @@ export function LuxuryReveal() {
   useEffect(() => {
     if (videoRef.current) {
       if (isInView) {
-        videoRef.current.play().catch(e => console.log('Video play failed:', e));
+        videoRef.current.play().catch(() => console.warn('Autoplay blocked'));
       } else {
         videoRef.current.pause();
       }
@@ -38,13 +38,14 @@ export function LuxuryReveal() {
       >
         <video
           ref={videoRef}
-          src="/videos/luxury-reveal.mp4"
+          poster="/og-image.webp"
           className="w-full h-full object-cover"
           autoPlay
           muted
           playsInline
           loop
           preload="metadata"
+          onError={() => console.warn("Video unavailable")}
         />
       </motion.div>
 

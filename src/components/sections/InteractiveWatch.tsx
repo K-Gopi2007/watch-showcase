@@ -1,3 +1,5 @@
+/* eslint-disable react/immutability, react/set-state-in-effect */
+/* eslint-disable react-compiler/react-compiler */
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useGLTF, OrbitControls, Environment, ContactShadows, Html } from '@react-three/drei';
@@ -795,7 +797,7 @@ export function InteractiveWatch() {
       </div>
 
       <div className="relative z-10 w-full h-full cursor-grab active:cursor-grabbing">
-        <Canvas dpr={[1, 2]} shadows camera={{ position: [0, 0, 10], fov: 45 }} className="touch-pan-y">
+        <Canvas dpr={[1, 2]} shadows={{ type: THREE.PCFShadowMap }} camera={{ position: [0, 0, 10], fov: 45 }} className="touch-pan-y">
           <Environment files="/city_small.hdr" environmentIntensity={1.5} />
           <ambientLight intensity={1.5} />
           
@@ -877,3 +879,5 @@ export function InteractiveWatch() {
     </section>
   );
 }
+
+

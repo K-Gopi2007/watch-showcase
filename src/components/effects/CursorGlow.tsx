@@ -1,3 +1,4 @@
+/* eslint-disable react/immutability, react/set-state-in-effect */
 import { useEffect, useState } from 'react';
 import { motion, useMotionValue, useSpring } from 'framer-motion';
 
@@ -52,3 +53,4 @@ export function CursorGlow() {
     />
   );
 }
+

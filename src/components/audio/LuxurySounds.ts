@@ -17,7 +17,27 @@ class LuxuryAudioManager {
     this.listeners.forEach((l) => l(this.isMuted));
   }
 
-  public init = () => {
+  constructor() {
+    if (typeof window !== 'undefined') {
+      const initAudio = async () => {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          this.masterGain = this.ctx.createGain();
+          this.masterGain.connect(this.ctx.destination);
+          this.updateVolume();
+        }
+        if (this.ctx.state === 'suspended') {
+          await this.ctx.resume();
+        }
+      };
+
+      window.addEventListener('click', initAudio, { once: true });
+      window.addEventListener('pointerdown', initAudio, { once: true });
+      window.addEventListener('touchstart', initAudio, { once: true });
+    }
+  }
+
+  public init = async () => {
     if (!this.ctx) {
       this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
       this.masterGain = this.ctx.createGain();
@@ -25,7 +45,7 @@ class LuxuryAudioManager {
       this.updateVolume();
     }
     if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      await this.ctx.resume();
     }
   };
 
