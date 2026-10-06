@@ -16,11 +16,15 @@ import { Contact } from './components/sections/Contact';
 import { CursorGlow } from './components/effects/CursorGlow';
 
 import { LuxuryReveal } from './components/sections/LuxuryReveal';
+import { CinematicHero } from './components/sections/CinematicHero';
 import { HeroVideo } from './components/sections/HeroVideo';
+import { CollectionGallery } from './components/sections/CollectionGallery';
+import { VideoShowcase } from './components/sections/VideoShowcase';
 
 import { Comparison } from './components/sections/Comparison';
 import { VirtualWrist } from './components/sections/VirtualWrist';
 import { CinematicWatch } from './components/sections/CinematicWatch';
+import { LuxuryFeatures } from './components/sections/LuxuryFeatures';
 
 function App() {
   const [introDone, setIntroDone] = useState(false);
@@ -43,8 +47,12 @@ function App() {
       
       <main id="main-content">
         <LuxuryReveal />
+        <CinematicHero />
         <HeroVideo />
         <CinematicWatch />
+        <LuxuryFeatures />
+        <CollectionGallery />
+        <VideoShowcase />
         <Comparison />
         <VirtualWrist />
         <Statistics />
