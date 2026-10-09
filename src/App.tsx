@@ -3,28 +3,15 @@ import { AnimatePresence } from 'framer-motion';
 import { Navbar } from './components/layout/Navbar';
 import { IntroSequence } from './components/layout/IntroSequence';
 import { Footer } from './components/layout/Footer';
-import { Statistics } from './components/sections/Statistics';
-import { About } from './components/sections/About';
-import { Story } from './components/sections/Story';
-import { Heritage } from './components/sections/Heritage';
-import { Clarity } from './components/sections/Clarity';
-import { Specifications } from './components/sections/Specifications';
-import { Gallery } from './components/sections/Gallery';
-import { ProjectHighlights } from './components/sections/ProjectHighlights';
-import { Testimonials } from './components/sections/Testimonials';
-import { Contact } from './components/sections/Contact';
 import { CursorGlow } from './components/effects/CursorGlow';
 
-import { LuxuryReveal } from './components/sections/LuxuryReveal';
-import { CinematicHero } from './components/sections/CinematicHero';
+// 6 Core Sections
 import { HeroVideo } from './components/sections/HeroVideo';
+import { LuxuryFeatures } from './components/sections/LuxuryFeatures';
 import { CollectionGallery } from './components/sections/CollectionGallery';
 import { VideoShowcase } from './components/sections/VideoShowcase';
-
-import { Comparison } from './components/sections/Comparison';
-import { VirtualWrist } from './components/sections/VirtualWrist';
-import { CinematicWatch } from './components/sections/CinematicWatch';
-import { LuxuryFeatures } from './components/sections/LuxuryFeatures';
+import { Heritage } from './components/sections/Heritage';
+import { Contact } from './components/sections/Contact';
 
 function App() {
   const [introDone, setIntroDone] = useState(false);
@@ -36,39 +23,37 @@ function App() {
       </AnimatePresence>
 
       <div className="min-h-screen bg-background text-foreground font-sans">
-      <CursorGlow />
-      <a 
-        href="#main-content" 
-        className="absolute -top-96 left-0 z-[999] bg-primary text-black px-4 py-2 focus:top-0 transition-all focus:outline-none"
-      >
-        Skip to main content
-      </a>
-      <Navbar />
-      
-      <main id="main-content">
-        <LuxuryReveal />
-        <CinematicHero />
-        <HeroVideo />
-        <CinematicWatch />
-        <LuxuryFeatures />
-        <CollectionGallery />
-        <VideoShowcase />
-        <Comparison />
-        <VirtualWrist />
-        <Statistics />
-        <About />
-        <Story />
-        <Heritage />
-        <Clarity />
-        <Specifications />
-        <Gallery />
-        <ProjectHighlights />
-        <Testimonials />
-        <Contact />
-      </main>
+        <CursorGlow />
+        <a 
+          href="#main-content" 
+          className="absolute -top-96 left-0 z-[999] bg-primary text-black px-4 py-2 focus:top-0 transition-all focus:outline-none"
+        >
+          Skip to main content
+        </a>
+        <Navbar />
+        
+        <main id="main-content">
+          {/* 1. Cinematic Hero */}
+          <HeroVideo />
 
-      <Footer />
-    </div>
+          {/* 2. Watchmaking Story (Bezel, Crown, Dial, Bracelet) */}
+          <LuxuryFeatures />
+
+          {/* 3. Collection (Curated 3 watches) */}
+          <CollectionGallery />
+
+          {/* 4. Cinematic Film (Single focused video showcase) */}
+          <VideoShowcase />
+
+          {/* 5. Heritage and Specifications (Merged history & specs) */}
+          <Heritage />
+
+          {/* 6. Contact & Consultation */}
+          <Contact />
+        </main>
+
+        <Footer />
+      </div>
     </>
   );
 }

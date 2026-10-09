@@ -28,9 +28,11 @@ export function Footer() {
             <h3 className="text-xs uppercase tracking-[0.2em] text-foreground mb-6 font-semibold">Navigation</h3>
             <ul className="flex flex-col gap-4">
               <li><a href="#home" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Home</a></li>
+              <li><a href="#story" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Story</a></li>
+              <li><a href="#collection" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Collection</a></li>
+              <li><a href="#film" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Film</a></li>
               <li><a href="#specifications" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Specifications</a></li>
-              <li><a href="#gallery" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Gallery</a></li>
-              <li><a href="#contact" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Contact</a></li>
+              <li><a href="#contact" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Inquire</a></li>
             </ul>
           </div>
 
@@ -39,17 +41,17 @@ export function Footer() {
             <div>
               <h3 className="text-xs uppercase tracking-[0.2em] text-foreground mb-6 font-semibold">Social</h3>
               <ul className="flex flex-col gap-4">
-                <li><a href="#" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Instagram</a></li>
-                <li><a href="#" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Facebook</a></li>
-                <li><a href="#" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">YouTube</a></li>
+                <li><a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Rolex on Instagram" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Instagram</a></li>
+                <li><a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Rolex on Facebook" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Facebook</a></li>
+                <li><a href="https://youtube.com" target="_blank" rel="noopener noreferrer" aria-label="Rolex on YouTube" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">YouTube</a></li>
               </ul>
             </div>
             
             <div>
               <h3 className="text-xs uppercase tracking-[0.2em] text-foreground mb-6 font-semibold">Legal</h3>
               <ul className="flex flex-col gap-4">
-                <li><a href="#" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Privacy Policy</a></li>
-                <li><a href="#" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Terms</a></li>
+                <li><a href="#contact" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Privacy Policy</a></li>
+                <li><a href="#contact" className="text-muted hover:text-primary transition-colors duration-300 text-sm tracking-wider">Terms &amp; Conditions</a></li>
               </ul>
             </div>
           </div>

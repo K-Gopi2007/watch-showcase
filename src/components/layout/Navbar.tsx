@@ -22,11 +22,11 @@ export function Navbar() {
   }, []);
 
   const navLinks = [
+    { name: 'Story', href: '#story' },
     { name: 'Collection', href: '#collection' },
-    { name: 'About', href: '#about' },
+    { name: 'Film', href: '#film' },
     { name: 'Specifications', href: '#specifications' },
-    { name: 'Gallery', href: '#gallery' },
-    { name: 'Contact', href: '#contact' },
+    { name: 'Inquire', href: '#contact' },
   ];
 
   return (
@@ -70,11 +70,14 @@ export function Navbar() {
           <button
             onClick={() => luxurySounds.toggleMute()}
             className="text-foreground hover:text-primary transition-colors p-2"
+            aria-label={isMuted ? "Unmute audio" : "Mute audio"}
           >
             {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
           </button>
           <button
             className="text-foreground hover:text-primary transition-colors p-2"
+            aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+            aria-expanded={isMobileMenuOpen}
             onClick={() => {
               luxurySounds.playTap();
               setIsMobileMenuOpen(!isMobileMenuOpen);

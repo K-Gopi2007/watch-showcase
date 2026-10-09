@@ -1,14 +1,28 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import emailjs from '@emailjs/browser';
-import { Loader2, CheckCircle2 } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, AlertTriangle } from 'lucide-react';
 import clsx from 'clsx';
 
 export function Contact() {
   const formRef = useRef<HTMLFormElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error' | 'unconfigured'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+  const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+  const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+
+  const isConfigured = Boolean(
+    serviceId &&
+    templateId &&
+    publicKey &&
+    serviceId !== 'your_service_id_here' &&
+    templateId !== 'your_template_id_here' &&
+    publicKey !== 'your_public_key_here'
+  );
 
   const validateForm = (formData: FormData) => {
     const newErrors: Record<string, string> = {};
@@ -35,28 +49,41 @@ export function Contact() {
     const formData = new FormData(formRef.current);
     if (!validateForm(formData)) return;
 
+    // Strict validation: Do not pretend delivery if credentials are not configured
+    if (!isConfigured) {
+      setSubmitStatus('unconfigured');
+      setErrorMessage(
+        'Inquiry service is not yet configured. Please supply valid VITE_EMAILJS_* environment variables to enable direct transmission.'
+      );
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitStatus('idle');
+    setErrorMessage('');
 
     try {
-      // For production, replace these with your actual EmailJS credentials
-      await emailjs.sendForm(
-        'YOUR_SERVICE_ID', 
-        'YOUR_TEMPLATE_ID', 
+      const result = await emailjs.sendForm(
+        serviceId, 
+        templateId, 
         formRef.current,
-        'YOUR_PUBLIC_KEY'
+        publicKey
       );
-      setSubmitStatus('success');
-      formRef.current.reset();
-    } catch (error) {
-      console.warn("EmailJS error (expected if keys are placeholders). Simulating success for showcase.", error);
-      // Simulate network request for demonstration
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setSubmitStatus('success');
-      formRef.current.reset();
+
+      if (result.status === 200 || result.text === 'OK') {
+        setSubmitStatus('success');
+        formRef.current.reset();
+        setTimeout(() => setSubmitStatus('idle'), 6000);
+      } else {
+        throw new Error(result.text || 'EmailJS rejected message transmission.');
+      }
+    } catch (error: unknown) {
+      const err = error as { text?: string; message?: string };
+      const desc = err?.text || err?.message || 'Transmission failed. Please check network connection and try again.';
+      setSubmitStatus('error');
+      setErrorMessage(desc);
     } finally {
       setIsSubmitting(false);
-      setTimeout(() => setSubmitStatus('idle'), 5000);
     }
   };
 
@@ -88,6 +115,7 @@ export function Contact() {
 
           <div className="w-full max-w-2xl mx-auto text-left">
             <form ref={formRef} onSubmit={handleSubmit} className="space-y-6 bg-white/5 backdrop-blur-xl border border-white/10 p-6 md:p-12 rounded-2xl shadow-2xl relative overflow-hidden">
+              
               {/* Overlay success message */}
               <AnimatePresence>
                 {submitStatus === 'success' && (
@@ -95,14 +123,38 @@ export function Contact() {
                     initial={{ opacity: 0 }} 
                     animate={{ opacity: 1 }} 
                     exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-black/90 backdrop-blur-md z-10 flex flex-col items-center justify-center text-center p-8"
+                    className="absolute inset-0 bg-black/95 backdrop-blur-md z-10 flex flex-col items-center justify-center text-center p-8"
                   >
                     <CheckCircle2 size={48} className="text-primary mb-6" />
-                    <h3 className="text-2xl font-light text-white mb-2">Inquiry Received</h3>
-                    <p className="text-white/60 font-light text-sm md:text-base">An ambassador will contact you shortly to discuss your request.</p>
+                    <h3 className="text-2xl font-light text-white mb-2">Inquiry Confirmed</h3>
+                    <p className="text-white/60 font-light text-sm md:text-base max-w-md">
+                      Your transmission was received successfully. A client ambassador will contact you within 24 hours.
+                    </p>
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Unconfigured Alert Banner */}
+              {submitStatus === 'unconfigured' && (
+                <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-amber-200 text-xs md:text-sm">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0 text-amber-400 mt-0.5" />
+                  <div>
+                    <p className="font-semibold mb-1">Configuration Required</p>
+                    <p className="text-amber-200/80">{errorMessage}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Alert Banner */}
+              {submitStatus === 'error' && (
+                <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/30 flex items-start gap-3 text-red-200 text-xs md:text-sm">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-400 mt-0.5" />
+                  <div>
+                    <p className="font-semibold mb-1">Transmission Error</p>
+                    <p className="text-red-200/80">{errorMessage}</p>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">

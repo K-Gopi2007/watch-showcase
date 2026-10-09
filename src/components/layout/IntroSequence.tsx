@@ -5,6 +5,13 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
   const [stage, setStage] = useState(0);
 
   useEffect(() => {
+    // If user prefers reduced motion, skip intro animation sequence immediately
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      onComplete();
+      return;
+    }
+
     document.body.style.overflow = 'hidden';
     window.scrollTo(0, 0); // Ensure at top when starting
 
@@ -26,6 +33,8 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
   return (
     <motion.div
       className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center overflow-hidden"
+      role="dialog"
+      aria-label="Introduction sequence"
       initial={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 1, ease: 'easeInOut' } }}
     >
@@ -39,9 +48,9 @@ export function IntroSequence({ onComplete }: { onComplete: () => void }) {
             exit={{ opacity: 0, scale: 1.1, filter: 'blur(10px)', transition: { duration: 0.4 } }}
             transition={{ duration: 1, ease: "easeOut" }}
           >
-            <h1 className="text-5xl md:text-8xl font-serif text-white tracking-[0.3em] uppercase drop-shadow-2xl">
+            <span className="text-5xl md:text-8xl font-serif text-white tracking-[0.3em] uppercase drop-shadow-2xl">
               Rolex
-            </h1>
+            </span>
             
             {/* Light Sweep Effect */}
             <motion.div
